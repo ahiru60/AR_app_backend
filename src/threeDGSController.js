@@ -29,7 +29,7 @@ function replaceStringsInFile(filePath, replacements, callback) {
 
 // Define a GET route for replacing strings
 router.get('/', (req, res) => {
-    const filePath = path.join(__dirname, 'resources/webViewer.txt'); // Replace with your file path
+    const filePath = path.join(__dirname, 'ar_furniture_app_api/resources/webViewer.txt'); // Replace with your file path
     const replacements = {
         'splat or ply': 'https://huggingface.co/cakewalk/splat-data/resolve/main/train.splat'
     };
