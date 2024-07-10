@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const db = require('./db');
 const fs = require('fs');
 const path = require('path');
-
 
 // Function to replace strings in a file
 function replaceStringsInFile(filePath, replacements, callback) {
@@ -43,3 +41,5 @@ router.get('/', (req, res) => {
         res.send(message);
     });
 });
+
+module.exports = router; // Ensure the router is correctly exported
