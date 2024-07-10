@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const userController = require('./userController');
 const authController = require('./authController');
 const furnitureController = require('./furnitureController');
+const cors = require('cors');
 
 const app = express();
 const port = 3000;
