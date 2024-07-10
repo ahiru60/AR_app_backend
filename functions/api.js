@@ -8,7 +8,8 @@ const threeDGSController = require('../src/threeDGSController');
 
 const app = express();
 const router = express.Router();
-
+// Enable CORS for all routes
+app.use(cors());
 app.use(bodyParser.json());
 
 router.use('/users', userController);

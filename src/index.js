@@ -6,7 +6,8 @@ const furnitureController = require('./furnitureController');
 
 const app = express();
 const port = 3000;
-
+// Enable CORS for all routes
+app.use(cors());
 app.use(bodyParser.json());
 
 app.use('/users', userController);
