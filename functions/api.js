@@ -10,9 +10,9 @@ const router = express.Router();
 
 app.use(bodyParser.json());
 
-router.get('/users', userController);
-router.get('/auth', authController);
-router.get('/furniture', furnitureController);
+router.use('/users', userController);
+router.use('/auth', authController);
+router.use('/furniture', furnitureController);
 
 app.use("/.netlify/functions/api", router);
 module.exports.handler = serverless(app);
