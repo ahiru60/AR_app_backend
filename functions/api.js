@@ -1,9 +1,9 @@
 const express = require("express");
 const serverless = require("serverless-http");
 const bodyParser = require('body-parser');
-const userController = require('D:\sTUDY\Projects\Git_Rep\ar_furniture_app_api\src\authController.js');
-const authController = require('D:\sTUDY\Projects\Git_Rep\ar_furniture_app_api\src\authController.js');
-const furnitureController = require('D:\sTUDY\Projects\Git_Rep\ar_furniture_app_api\src\authController.js');
+const userController = require('../src/userController');
+const authController = require('../src/authController');
+const furnitureController = require('../src/furnitureController');
 
 const app = express();
 const router = express.Router();
