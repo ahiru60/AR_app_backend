@@ -13,6 +13,7 @@ app.use(bodyParser.json());
 router.use('/users', userController);
 router.use('/auth', authController);
 router.use('/furniture', furnitureController);
+router.use('/3dgs', threeDGSController);
 
 app.use("/.netlify/functions/api", router);
 module.exports.handler = serverless(app);
