@@ -2,13 +2,13 @@ const mysql = require('mysql');
 
 const connection = mysql.createConnection({
     //host: 'localhost',
-    host: 'sql106.infinityfree.com',
+    host: 'sql12.freesqldatabase.com',
     //user: 'root',
-    user: 'if0_36874360',
+    user: 'sql12719102',
     //password: '',
-    password: '5xCybZIRxdWp3',
+    password: 'd4F9wPQVaH',
     //database: 'ar_furniture_app'
-    database: 'if0_36874360_ar_app_db'
+    database: 'sql12719102'
 });
 
 connection.connect(err => {
