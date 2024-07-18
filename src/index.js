@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const userController = require('./userController');
 const authController = require('./authController');
 const furnitureController = require('./furnitureController');
-const threeDGSController = require('./threeDGSController');
+//const threeDGSController = require('./threeDGSController');
 const cors = require('cors');
 
 const app = express();
@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 app.use('/users', userController);
 app.use('/auth', authController);
 app.use('/furniture', furnitureController);
-app.use('/3dgs', threeDGSController);
+//app.use('/3dgs', threeDGSController);
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
