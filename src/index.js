@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 app.use('/users', userController);
 app.use('/auth', authController);
 app.use('/furniture', furnitureController);
-//app.use('/3dgs', threeDGSController);
+app.use('/3dgs', threeDGSController);
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
