@@ -32,6 +32,18 @@ router.get('/', (req, res) => {
     });
 });
 
+// Get all furniture names
+
+router.get('/like/', (req, res) => {
+    const keyword = req.body.keyword;
+    db.query('SELECT Name FROM furniture WHERE Name LIKE ?', ["%"+keyword+"%"], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err });
+        }
+        res.json(results);
+    });
+});
+
 // Get furniture by ID
 router.get('/:id', (req, res) => {
     const furnitureId = req.params.id;
