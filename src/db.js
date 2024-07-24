@@ -2,13 +2,13 @@ const mysql = require('mysql');
 
 const connection = mysql.createConnection({
     // host: 'localhost',
-    host: 'sql106.infinityfree.com',
+    host: 'bt0cl3e0jeqs7fdex26z-mysql.services.clever-cloud.com',
     // user: 'root',
-    user: 'if0_36874360',
+    user: 'ufwcbxvf28fsgjwv',
     // password: '',
-    password: '5xCybZIRxdWp3',
+    password: 'Kr6jRzbQ30EGPkMAxBUh',
     // database: 'ar_furniture_app'
-    database: 'if0_36874360_db_ar_furniture_app'
+    database: 'bt0cl3e0jeqs7fdex26z'
 });
 
 connection.connect(err => {
