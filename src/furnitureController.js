@@ -34,8 +34,8 @@ router.get('/', (req, res) => {
 
 // Get all furniture names
 
-router.post('/like/', (req, res) => {
-    const keyword = req.body.keyword;
+router.get('/like/:keyword', (req, res) => {
+    const keyword = req.params.keyword;
     db.query('SELECT Name FROM furniture WHERE Name LIKE ?', ["%"+keyword+"%"], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
