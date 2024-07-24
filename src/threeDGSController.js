@@ -59,7 +59,7 @@ const data = `<!DOCTYPE html>
 
 // Define a GET route for replacing strings
 router.get('/', (req, res) => {
-        res.send(data);
+        res.status(200).json(data);
 });
 
 module.exports = router; // Ensure the router is correctly exported
