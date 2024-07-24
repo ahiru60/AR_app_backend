@@ -38,7 +38,7 @@ function replaceStringsInFile(splat, callback) {
             callback(null, 'File updated successfully.');
         });
     };
-}
+
 
 // Define a GET route for replacing strings
 router.get('/', (req, res) => {
