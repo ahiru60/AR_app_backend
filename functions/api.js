@@ -6,7 +6,7 @@ const cors = require('cors');
 const userController = require('../src/userController');
 const authController = require('../src/authController');
 const furnitureController = require('../src/furnitureController');
-//const threeDGSController = require('../src/threeDGSController');
+const threeDGSController = require('../src/threeDGSController');
 
 const app = express();
 const router = express.Router();

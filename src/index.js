@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const userController = require('./userController');
 const authController = require('./authController');
 const furnitureController = require('./furnitureController');
-//const threeDGSController = require('./threeDGSController');
+const threeDGSController = require('./threeDGSController');
 const cors = require('cors');
 
 const app = express();
