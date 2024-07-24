@@ -25,18 +25,18 @@ function replaceStringsInFile(splat, callback) {
 
         let updatedData = data;
 
-        // Replace each string based on the replacements object
-        for (const [oldString, newString] of Object.entries(replacements)) {
-            const regex = new RegExp(oldString, 'g');
-            updatedData = updatedData.replace(regex, newString);
-        }
+        // // Replace each string based on the replacements object
+        // for (const [oldString, newString] of Object.entries(replacements)) {
+        //     const regex = new RegExp(oldString, 'g');
+        //     updatedData = updatedData.replace(regex, newString);
+        // }
 
-        fs.writeFile(filePath, updatedData, 'utf8', (err) => {
-            if (err) {
-                return callback(`Error writing file: ${err}`);
-            }
-            callback(null, 'File updated successfully.');
-        });
+        // fs.writeFile(filePath, updatedData, 'utf8', (err) => {
+        //     if (err) {
+        //         return callback(`Error writing file: ${err}`);
+        //     }
+        //     callback(null, 'File updated successfully.');
+        // });
     };
 
 
