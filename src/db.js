@@ -1,14 +1,14 @@
 const mysql = require('mysql');
 
 const connection = mysql.createConnection({
-    //host: 'localhost',
+    // host: 'localhost',
     host: 'sql106.infinityfree.com',
-    //user: 'root',
+    // user: 'root',
     user: 'if0_36874360',
-    //password: '',
+    // password: '',
     password: '5xCybZIRxdWp3',
-    //database: 'ar_furniture_app'
-    database: 'if0_36874360_ar_app_db'
+    // database: 'ar_furniture_app'
+    database: 'if0_36874360_db_ar_furniture_app'
 });
 
 connection.connect(err => {
