@@ -7,7 +7,7 @@ const userController = require('../src/userController');
 const authController = require('../src/authController');
 const furnitureController = require('../src/furnitureController');
 const threeDGSController = require('../src/threeDGSController');
-const cartController = require('./cartController');
+const cartController = require('../cartController');
 
 const app = express();
 const router = express.Router();
