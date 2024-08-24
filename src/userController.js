@@ -40,47 +40,64 @@ router.get('/email/:email', (req, res) => {
 // Create a new user and update user roles
 router.post('/', (req, res) => {
     const user = req.body;
-
+    console.log("registration route");
     // Check if the user object contains all necessary fields
     if (!user.name || !user.email || !user.password || !user.role) {
+        console.log("invalid inputs");
         return res.status(400).json({ error: 'Missing required fields' });
     }
-    
-        db.beginTransaction(err => {
+
+    db.beginTransaction(err => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({ error: err });
+        }
+
+        db.query('INSERT INTO users SET ?', user, (err, results) => {
             if (err) {
-                return res.status(500).json({ error: err });
+                return db.rollback(() => {
+                    console.log(err);
+                    res.status(500).json({ error: err });
+                });
             }
-            db.query('INSERT INTO users SET ?', user, (err, results) => {
+
+            const userId = results.insertId;
+            const userRole = { UserID: userId, Role: user.role };
+
+            db.query('INSERT INTO user_roles SET ?', userRole, (err, results) => {
                 if (err) {
                     return db.rollback(() => {
+                        console.log(err);
                         res.status(500).json({ error: err });
                     });
                 }
-    
-                const userId = results.insertId;
-                const userRole = { UserID: userId, Role: user.role };
-    
-                db.query('INSERT INTO user_roles SET ?', userRole, (err, results) => {
+
+                const cart = { UserID: userId}; // Adjust this object to match your table's structure
+
+                db.query('INSERT INTO carts SET ?', cart, (err, results) => {
                     if (err) {
                         return db.rollback(() => {
+                            console.log(err);
                             res.status(500).json({ error: err });
                         });
                     }
-    
+
                     db.commit(err => {
                         if (err) {
                             return db.rollback(() => {
+                                console.log(err);
                                 res.status(500).json({ error: err });
                             });
                         }
+                        console.log("success");
                         res.status(201).json({ id: userId });
                     });
                 });
             });
         });
-    
-    
+    });
 });
+
 
 // Update a user
 router.put('/:id', (req, res) => {

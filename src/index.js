@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const userController = require('./userController');
 const authController = require('./authController');
 const furnitureController = require('./furnitureController');
+const cartController = require('./cartController');
 const threeDGSController = require('./threeDGSController');
 const cors = require('cors');
 
@@ -15,6 +16,7 @@ app.use(bodyParser.json());
 app.use('/users', userController);
 app.use('/auth', authController);
 app.use('/furniture', furnitureController);
+app.use('/cart', cartController);
 app.use('/3dgs', threeDGSController);
 
 app.listen(port, () => {

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 
-// Get all furniture
+// Get all furniture random
 let lastFetchedProducts = [];
 
 router.get('/', (req, res) => {
@@ -32,15 +32,29 @@ router.get('/', (req, res) => {
     });
 });
 
+// Get furnitures by name
+
+router.get('/like-items/:name', (req, res) => {
+    const name = req.params.name;
+    console.log("Keyword:", name); 
+    db.query('SELECT * FROM furniture WHERE Name LIKE ?', ["%"+name+"%"], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: err });
+        }
+        res.status(200).json(results);
+    });
+});
+
 // Get all furniture names
 
-router.get('/like/:keyword', (req, res) => {
+router.get('/like-keywords/:keyword', (req, res) => {
     const keyword = req.params.keyword;
+    console.log("Keyword:", keyword); 
     db.query('SELECT Name FROM furniture WHERE Name LIKE ?', ["%"+keyword+"%"], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
-        res.json(results);
+        res.status(200).json(results);
     });
 });
 
@@ -51,7 +65,7 @@ router.get('/:id', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
-        res.json(results[0]);
+        res.status(200).json(results[0]);
     });
 });
 

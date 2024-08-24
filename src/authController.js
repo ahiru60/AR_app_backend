@@ -10,9 +10,9 @@ router.post('/',(req,res) =>{
     if (!email || !password) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
-db.query('SELECT * FROM users WHERE Email = ? AND Password = ?',[email,password],(err, results)=>{
+db.query('SELECT users.UserID,carts.CartID,users.Name,users.Email,users.Password,users.Phone,users.Role,users.Address,users.RegistrationDate FROM users INNER JOIN carts ON users.UserID = carts.UserID WHERE users.Email = ? AND users.Password = ?',[email,password],(err, results)=>{
     if(err){
-        return res.status(500).json({error: err});
+        return res.status(500).json(err);
     }
     if(results.length === 1){
         res.status(200).json(results[0]);
