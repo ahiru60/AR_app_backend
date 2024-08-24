@@ -19,7 +19,7 @@ app.use(bodyParser.json());
 router.use('/users', userController);
 router.use('/auth', authController);
 router.use('/furniture', furnitureController);
-app.use('/cart', cartController);
+router.use('/cart', cartController);
 router.use('/3dgs', threeDGSController);
 
 app.use("/.netlify/functions/api", router);
