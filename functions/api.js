@@ -7,6 +7,7 @@ const userController = require('../src/userController');
 const authController = require('../src/authController');
 const furnitureController = require('../src/furnitureController');
 const threeDGSController = require('../src/threeDGSController');
+const cartController = require('./cartController');
 
 const app = express();
 const router = express.Router();
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 router.use('/users', userController);
 router.use('/auth', authController);
 router.use('/furniture', furnitureController);
+app.use('/cart', cartController);
 router.use('/3dgs', threeDGSController);
 
 app.use("/.netlify/functions/api", router);
