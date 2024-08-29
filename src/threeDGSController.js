@@ -1,65 +1,83 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const fs = require('fs');
-const path = require('path');
-const splat = 'https://huggingface.co/cakewalk/splat-data/resolve/main/train.splat';
-const data = `<!DOCTYPE html>
-    <html>
-      <head>
-        <script src='https://aframe.io/releases/1.4.2/aframe.min.js'></script>
-        <script src='https://quadjr.github.io/aframe-gaussian-splatting/index.js'></script>
-      </head>
-      <body>
-        <a-scene renderer='antialias: false' stats>
-          <a-entity position='0 1.6 -2.0' animation='property: rotation; to: 0 360 0; dur: 10000; easing: linear; loop: true'>
-            <a-sphere position='0 0 0.5' radius='0.5' color='#EF2D5E'></a-sphere>
-            <a-sphere position='0 0 -0.5' radius='0.5' color='#EF2D5E'></a-sphere>
-          </a-entity>
-          <a-entity gaussian_splatting='src: `+splat+`;' rotation='0 0 0' position='0 1.5 -2'></a-entity>
-        </a-scene>
-      </body>
-    </html>`;
 
-// Function to replace strings in a file
-// function replaceStringsInFile(splat, callback) {
-//     const data = `<!DOCTYPE html>
-//     <html>
-//       <head>
-//         <script src='https://aframe.io/releases/1.4.2/aframe.min.js'></script>
-//         <script src='https://quadjr.github.io/aframe-gaussian-splatting/index.js'></script>
-//       </head>
-//       <body>
-//         <a-scene renderer='antialias: false' stats>
-//           <a-entity position='0 1.6 -2.0' animation='property: rotation; to: 0 360 0; dur: 10000; easing: linear; loop: true'>
-//             <a-sphere position='0 0 0.5' radius='0.5' color='#EF2D5E'></a-sphere>
-//             <a-sphere position='0 0 -0.5' radius='0.5' color='#EF2D5E'></a-sphere>
-//           </a-entity>
-//           <a-entity gaussian_splatting='src: `+splat+`;' rotation='0 0 0' position='0 1.5 -2'></a-entity>
-//         </a-scene>
-//       </body>
-//     </html>`;
-    
+// Middleware to check for API key
+const checkApiKey = (req, res, next) => {
+  const apiKey = req.headers['authorization'];
+  if (!apiKey || !apiKey.startsWith('luma-api-key=')) {
+    return res.status(401).json({ error: 'Invalid API key' });
+  }
+  req.apiKey = process.env.LUMA_AI_API_KEY;
+  next();
+};
 
-//         let updatedData = data;
-
-        // // Replace each string based on the replacements object
-        // for (const [oldString, newString] of Object.entries(replacements)) {
-        //     const regex = new RegExp(oldString, 'g');
-        //     updatedData = updatedData.replace(regex, newString);
-        // }
-
-        // fs.writeFile(filePath, updatedData, 'utf8', (err) => {
-        //     if (err) {
-        //         return callback(`Error writing file: ${err}`);
-        //     }
-        //     callback(null, 'File updated successfully.');
-        // });
-    // };
-
-
-// Define a GET route for replacing strings
-router.get('/', (req, res) => {
-        res.status(200).json(data);
+// Create capture
+router.post('/capture', checkApiKey, async (req, res) => {
+  try {
+    const response = await axios.post('https://webapp.engineeringlumalabs.com/api/v2/capture', 
+      { title: req.body.title },
+      { 
+        headers: { 'Authorization': req.apiKey },
+        params: req.body
+      }
+    );
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+  }
 });
 
-module.exports = router; // Ensure the router is correctly exported
+// Upload capture
+router.put('/upload', async (req, res) => {
+  try {
+    const fileContent = fs.readFileSync(req.body.filePath);
+    const response = await axios.put(req.body.uploadUrl, fileContent, {
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+  }
+});
+
+// Trigger capture
+router.post('/capture/:slug', checkApiKey, async (req, res) => {
+  try {
+    const response = await axios.post(`https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`, 
+      {},
+      { headers: { 'Authorization': req.apiKey } }
+    );
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+  }
+});
+
+// Update capture
+router.put('/capture/:slug', checkApiKey, async (req, res) => {
+  try {
+    const response = await axios.put(`https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`, 
+      req.body,
+      { headers: { 'Authorization': req.apiKey } }
+    );
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+  }
+});
+
+// Get a capture
+router.get('/capture/:slug', checkApiKey, async (req, res) => {
+  try {
+    const response = await axios.get(`https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`, 
+      { headers: { 'Authorization': req.apiKey } }
+    );
+    res.json(response.data);
+  } catch (error) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+  }
+});
+
+module.exports = router;
