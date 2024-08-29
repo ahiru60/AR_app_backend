@@ -53,7 +53,7 @@ router.get('/', (req, res) => {
         // Parse the concatenated image URLs into arrays
         results = results.map(product => ({
             ...product,
-            imageURLs: product.imageURLs ? product.imageURLs.split(',') : []
+            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : []
         }));
 
         res.json(results);
