@@ -66,13 +66,30 @@ router.get('/', (req, res) => {
 router.get('/like-items/:name', (req, res) => {
     const name = req.params.name;
     console.log("Keyword:", name); 
-    db.query('SELECT * FROM furniture WHERE Name LIKE ?', ["%"+name+"%"], (err, results) => {
+
+    const query = `
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+        FROM furniture f
+        LEFT JOIN furnitureimages fi ON f.furniture_id = fi.FurnitureId
+        WHERE f.Name LIKE ?
+        GROUP BY f.FurnitureId
+    `;
+
+    db.query(query, ["%" + name + "%"], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
+
+        // Parse the concatenated image URLs into arrays
+        results = results.map(product => ({
+            ...product,
+            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : []
+        }));
+
         res.status(200).json(results);
     });
 });
+
 
 // Get all furniture names
 
