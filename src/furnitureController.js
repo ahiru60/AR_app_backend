@@ -70,7 +70,7 @@ router.get('/like-items/:name', (req, res) => {
     const query = `
         SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
         FROM furniture f
-        LEFT JOIN furnitureimages fi ON f.furniture_id = fi.FurnitureId
+        LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         WHERE f.Name LIKE ?
         GROUP BY f.FurnitureId
     `;
