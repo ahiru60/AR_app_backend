@@ -72,7 +72,6 @@ router.get('/like-items/:name', (req, res) => {
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         WHERE f.Name LIKE ?
-        GROUP BY f.FurnitureId
     `;
 
     db.query(query, ["%" + name + "%"], (err, results) => {

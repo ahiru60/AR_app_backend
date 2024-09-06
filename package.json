@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ar_furniture_app_api": "file:",
     "async": "^3.2.5",
     "axios": "^1.7.5",
     "bcrypt": "^5.1.1",
