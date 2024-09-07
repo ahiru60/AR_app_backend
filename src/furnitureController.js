@@ -100,7 +100,7 @@ router.get('/like-keywords/:keyword', (req, res) => {
             return res.status(500).json({ error: err });
         }
         if (results.length === 0) {
-            return res.status(404).json({ message: 'No furniture items found matching the keyword.' });
+            return res.status(500).json({ message: 'No furniture items found matching the keyword.' });
         }
         res.status(200).json(results);
     });
