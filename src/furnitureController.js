@@ -79,11 +79,6 @@ router.get('/like-items/:name', (req, res) => {
             return res.status(500).json({ error: err });
         }
 
-        // Check if no rows are found
-        if (results.length === 0) {
-            return res.status(404).json({ message: "No items found matching the search criteria." });
-        }
-
         // Parse the concatenated image URLs into arrays
         results = results.map(product => ({
             ...product,
@@ -93,7 +88,6 @@ router.get('/like-items/:name', (req, res) => {
         res.status(200).json(results);
     });
 });
-
 
 
 // Get all furniture names
