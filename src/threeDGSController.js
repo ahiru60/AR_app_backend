@@ -53,10 +53,17 @@ router.post('/capture', checkApiKey, async (req, res) => {
 // Upload capture
 router.put('/upload', async (req, res) => {
   try {
-    const fileContent = fs.readFileSync(req.body.filePath);
-    const response = await axios.put(req.body.uploadUrl, fileContent, {
-      headers: { 'Content-Type': 'text/plain' }
+    // Create a FormData instance to handle multipart file upload
+    const form = new FormData();
+    form.append('file', fs.createReadStream(req.body.filePath)); // Read the file and append to form
+
+    // Send the multipart request to the URL
+    const response = await axios.put(req.body.uploadUrl, form, {
+      headers: {
+        ...form.getHeaders(), // Include form headers
+      },
     });
+
     res.json(response.data);
   } catch (error) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
