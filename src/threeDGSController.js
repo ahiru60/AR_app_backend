@@ -51,22 +51,34 @@ router.post('/capture', checkApiKey, async (req, res) => {
 });
 
 // Upload capture
-router.put('/upload', async (req, res) => {
+router.put('/upload', upload.single('file'), async (req, res) => {
   try {
-    // Create a FormData instance to handle multipart file upload
-    const form = new FormData();
-    form.append('file', fs.createReadStream(req.body.filePath)); // Read the file and append to form
+    // Ensure the file and uploadUrl are present
+    if (!req.file || !req.body.uploadUrl) {
+      return res.status(400).json({ error: 'File or upload URL missing' });
+    }
 
-    // Send the multipart request to the URL
+    // Create a FormData instance for axios to handle the multipart upload
+    const form = new FormData();
+    const filePath = path.join(__dirname, req.file.path); // Ensure correct path to the uploaded file
+    form.append('file', fs.createReadStream(filePath)); // Append the file using a readable stream
+
+    // Send the multipart request to the upload URL
     const response = await axios.put(req.body.uploadUrl, form, {
       headers: {
-        ...form.getHeaders(), // Include form headers
+        ...form.getHeaders(), // Include multipart headers
       },
     });
 
+    // Clean up the file after upload
+    fs.unlinkSync(filePath); // Delete the temporary file
+
+    // Send back the response received from the upload URL
     res.json(response.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+    // Log the error and respond with the appropriate error message
+    console.error('Error during file upload:', error);
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred during file upload' });
   }
 });
 
