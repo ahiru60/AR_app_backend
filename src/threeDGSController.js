@@ -35,13 +35,6 @@ router.post('/capture', checkApiKey, async (req, res) => {
         }
       }
     );
-    // { title: req.body.title,
-    //   camModel: req.body.camModel,
-    //   removeHumans: req.body.removeHumans
-    //  },  // Body data
-    // { 
-    //   headers: { 'Authorization': req.apiKey }  // Headers
-    // }
 
     // Send the response data from the external API back to the client
     res.json(response.data);
@@ -62,55 +55,24 @@ if (!admin.apps.length) {
   });
 }
 
-const bucket = admin.storage().bucket();
-
 router.put('/upload', async (req, res) => {
   try {
-    // Fetch the file from Firestore Storage by file path or name
-    const file = bucket.file(req.body.filePath); // req.body.filePath contains the file name or path in Firebase Storage
-    
-    // Get a signed URL for the file (if needed for external access)
-    const [url] = await file.getSignedUrl({
-      action: 'read',
-      expires: '03-17-2025', // Set an expiration date
-    });
-
     // Create a FormData instance to handle multipart file upload
     const form = new FormData();
-    form.append('file', url); // Pass the file URL as data
+    form.append('file', fs.createReadStream(req.body.filePath)); // Read the file and append to form
 
-    // Send the PUT request with the file URL in form-data
+    // Send the multipart request to the URL
     const response = await axios.put(req.body.uploadUrl, form, {
       headers: {
         ...form.getHeaders(), // Include form headers
       },
     });
 
-    res.json(response.data); // Send the response back to the client
+    res.json(response.data);
   } catch (error) {
-    console.error('Error uploading file:', error);
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
   }
 });
-
-// router.put('/upload', async (req, res) => {
-//   try {
-//     // Create a FormData instance to handle multipart file upload
-//     const form = new FormData();
-//     form.append('file', fs.createReadStream(req.body.filePath)); // Read the file and append to form
-
-//     // Send the multipart request to the URL
-//     const response = await axios.put(req.body.uploadUrl, form, {
-//       headers: {
-//         ...form.getHeaders(), // Include form headers
-//       },
-//     });
-
-//     res.json(response.data);
-//   } catch (error) {
-//     res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
-//   }
-// });
 
 // Trigger capture
 router.post('/capture/:slug', checkApiKey, async (req, res) => {
