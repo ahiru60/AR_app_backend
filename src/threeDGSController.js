@@ -79,7 +79,7 @@ router.put('/upload', async (req, res) => {
 router.post('/trigger-capture/:slug', checkApiKey, async (req, res) =>{
   try {
       const response = await axios.post(
-          `https://webapp.engineeringlumalabs.com/api/v2/capture/${req.body.slug}`,
+          `https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`,
           {}, // Send an empty body
           { headers: { 'Authorization': req.apiKey } } // Forward the API key
       );
