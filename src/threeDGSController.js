@@ -75,17 +75,31 @@ router.put('/upload', async (req, res) => {
 });
 
 // Trigger capture
+
 router.post('/capture/:slug', checkApiKey, async (req, res) => {
   try {
-    const response = await axios.post(`https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`, 
-      {},
-      { headers: { 'Authorization': req.apiKey } }
-    );
-    res.json(response.data);
+      const response = await axios.post(
+          `https://webapp.engineeringlumalabs.com/api/v2/capture/${req.body.slug}`,
+          {}, // Send an empty body
+          { headers: { 'Authorization': req.apiKey } } // Forward the API key
+      );
+      res.json(response.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+      res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
   }
 });
+
+// router.post('/capture/:slug', checkApiKey, async (req, res) => {
+//   try {
+//     const response = await axios.post(`https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`, 
+//       {},
+//       { headers: { 'Authorization': req.apiKey } }
+//     );
+//     res.json(response.data);
+//   } catch (error) {
+//     res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+//   }
+// });
 
 // Update capture
 router.put('/capture/:slug', checkApiKey, async (req, res) => {
