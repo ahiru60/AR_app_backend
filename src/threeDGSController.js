@@ -76,7 +76,7 @@ router.put('/upload', async (req, res) => {
 
 // Trigger capture
 
-router.post('/trigger-capture/:slug', checkApiKey, async (req, res) => {
+router.post('/trigger-capture/:slug', checkApiKey, async (req, res) =>{
   try {
       const response = await axios.post(
           `https://webapp.engineeringlumalabs.com/api/v2/capture/${req.body.slug}`,
