@@ -76,30 +76,29 @@ router.put('/upload', async (req, res) => {
 
 // Trigger capture
 
-router.post('/trigger-capture/:slug', checkApiKey, async (req, res) =>{
+router.post('/trigger-capture/', checkApiKey, async (req, res) =>{
   try {
+      const capture = req.body;
       const response = await axios.post(
-          `https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`,
+          `https://webapp.engineeringlumalabs.com/api/v2/capture/${capture.slug}`,
           {}, // Send an empty body
           { headers: { 'Authorization': req.apiKey } } // Forward the API key
       );
+      
+     await db.query('INSERT INTO ar_visualization SET ?', capture, (err, results) => {
+          if (err) {
+              return res.status(500).json({ error: err });
+          }
+          res.status(201).json({ id: results.insertId });
+      });
+
+    // Send the successful response
+    res.json(response.data);
       res.json(response.data);
   } catch (error) {
       res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
   }
 });
-
-// router.post('/capture/:slug', checkApiKey, async (req, res) => {
-//   try {
-//     const response = await axios.post(`https://webapp.engineeringlumalabs.com/api/v2/capture/${req.params.slug}`, 
-//       {},
-//       { headers: { 'Authorization': req.apiKey } }
-//     );
-//     res.json(response.data);
-//   } catch (error) {
-//     res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
-//   }
-// });
 
 // Update capture
 router.put('/capture/:slug', checkApiKey, async (req, res) => {
@@ -124,6 +123,16 @@ router.get('/capture/:slug', checkApiKey, async (req, res) => {
   } catch (error) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
   }
+});
+//save capture slug
+router.get('/save-capture/', checkApiKey, async (req, res) => {
+  const capture = req.body;
+  db.query('INSERT INTO ar_visualization SET ?', capture, (err, results) => {
+    if (err) {
+        return res.status(500).json({ error: err });
+    }
+    res.status(201).json({ id: results.insertId });
+});
 });
 
 module.exports = router;
