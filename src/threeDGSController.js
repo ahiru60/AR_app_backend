@@ -77,30 +77,37 @@ router.put('/upload', async (req, res) => {
 
 // Trigger capture
 
-router.post('/trigger-capture/', checkApiKey, async (req, res) =>{
+router.post('/trigger-capture/', checkApiKey, async (req, res) => {
   try {
-      const capture = req.body;
-      const response = await axios.post(
-          `https://webapp.engineeringlumalabs.com/api/v2/capture/${capture.slug}`,
-          {}, // Send an empty body
-          { headers: { 'Authorization': req.apiKey } } // Forward the API key
-      );
-      
-     await db.query('INSERT INTO ar_visualization SET ?', capture, (err, results) => {
-          if (err) {
-            console.log(err);
-              return res.status(500).json({ error: err });
-          }
-          res.status(201).json({ id: results.insertId });
-      });
+    const capture = req.body;
 
-    // Send the successful response
-    res.json(response.data);
-      res.json(response.data);
+    // Make the API request
+    const apiResponse = await axios.post(
+      `https://webapp.engineeringlumalabs.com/api/v2/capture/${capture.slug}`,
+      {}, // Send an empty body
+      { headers: { 'Authorization': req.apiKey } } // Forward the API key
+    );
+
+    // Insert data into the database
+    db.query('INSERT INTO ar_visualization SET ?', capture, (err, results) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ error: err });
+      }
+
+      // Send the response only once after successful database insertion
+      res.status(201).json({
+        id: results.insertId,
+        apiResponse: apiResponse.data // Combine the database and API response if needed
+      });
+    });
+
   } catch (error) {
-      res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
+    // Send error response
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'An error occurred' });
   }
 });
+
 
 // Update capture
 router.put('/capture/:slug', checkApiKey, async (req, res) => {
