@@ -88,6 +88,7 @@ router.post('/trigger-capture/', checkApiKey, async (req, res) =>{
       
      await db.query('INSERT INTO ar_visualization SET ?', capture, (err, results) => {
           if (err) {
+            console.log(err);
               return res.status(500).json({ error: err });
           }
           res.status(201).json({ id: results.insertId });
