@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 
-// Get all furniture random
 let lastFetchedProducts = [];
 
 router.get('/', (req, res) => {
@@ -13,9 +12,10 @@ router.get('/', (req, res) => {
         const validIds = lastFetchedProducts.filter(id => Number.isInteger(id) && id > 0);
         if (validIds.length > 0) {
             query = `
-                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
                 FROM furniture f
                 LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+                LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
                 WHERE f.furniture_id NOT IN (${validIds.join(',')})
                 GROUP BY f.FurnitureId
                 ORDER BY RAND() 
@@ -23,9 +23,10 @@ router.get('/', (req, res) => {
             `;
         } else {
             query = `
-                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
                 FROM furniture f
                 LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+                LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
                 GROUP BY f.FurnitureId
                 ORDER BY RAND() 
                 LIMIT 10
@@ -33,9 +34,10 @@ router.get('/', (req, res) => {
         }
     } else {
         query = `
-            SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+            SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
             FROM furniture f
             LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+            LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
             GROUP BY f.FurnitureId
             ORDER BY RAND() 
             LIMIT 10
@@ -60,7 +62,8 @@ router.get('/', (req, res) => {
     });
 });
 
-//get all products 
+
+// Get all products
 router.get('/all', (req, res) => {
     // Construct the query based on whether lastFetchedProducts has valid entries
     let query;
@@ -69,25 +72,28 @@ router.get('/all', (req, res) => {
         const validIds = lastFetchedProducts.filter(id => Number.isInteger(id) && id > 0);
         if (validIds.length > 0) {
             query = `
-                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
                 FROM furniture f
                 LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
-                WHERE f.furniture_id NOT IN (${validIds.join(',')})
+                LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
+                WHERE f.FurnitureId NOT IN (${validIds.join(',')})
                 GROUP BY f.FurnitureId
             `;
         } else {
             query = `
-                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+                SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
                 FROM furniture f
                 LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+                LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
                 GROUP BY f.FurnitureId
             `;
         }
     } else {
         query = `
-            SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+            SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
             FROM furniture f
             LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+            LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
             GROUP BY f.FurnitureId
         `;
     }
@@ -98,7 +104,7 @@ router.get('/all', (req, res) => {
         }
 
         // Update the lastFetchedProducts array with the current fetched product IDs
-        lastFetchedProducts = results.map(product => product.furniture_id);
+        lastFetchedProducts = results.map(product => product.FurnitureId);
 
         // Parse the concatenated image URLs into arrays
         results = results.map(product => ({
@@ -109,6 +115,7 @@ router.get('/all', (req, res) => {
         res.json(results);
     });
 });
+
 
 
 
