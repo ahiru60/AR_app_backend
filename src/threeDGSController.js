@@ -158,7 +158,7 @@ router.get('/save-capture/', checkApiKey, async (req, res) => {
 });
 
 // Route to get a specific capture by slug
-router.get('/capture/:slug', checkApiKey, async (req, res) => {
+router.get('/get-capture/:slug', checkApiKey, async (req, res) => {
   try {
     const slug = req.params.slug; // Get the slug from the URL parameter
 
@@ -168,7 +168,7 @@ router.get('/capture/:slug', checkApiKey, async (req, res) => {
       maxBodyLength: Infinity,
       url: `https://webapp.engineeringlumalabs.com/api/v2/capture/${slug}`, // Use the slug from the request
       headers: { 
-        'Authorization': `luma-api-key=${req.apiKey}` // Use the apiKey from the middleware check
+        'Authorization': `${req.apiKey}` // Use the apiKey from the middleware check
       }
     };
 
