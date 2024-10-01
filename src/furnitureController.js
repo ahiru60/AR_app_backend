@@ -121,15 +121,42 @@ router.get('/all', (req, res) => {
 
 // Get furnitures by name
 
+// router.get('/like-items/:name', (req, res) => {
+//     const name = req.params.name;
+//     console.log("Keyword:", name); 
+
+//     const query = `
+//         SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+//         FROM furniture f
+//         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+//         WHERE f.Name LIKE ?
+//     `;
+
+//     db.query(query, ["%" + name + "%"], (err, results) => {
+//         if (err) {
+//             return res.status(500).json({ error: err });
+//         }
+
+//         // Parse the concatenated image URLs into arrays
+//         results = results.map(product => ({
+//             ...product,
+//             ImageURLs: product.imageURLs ? product.imageURLs.split(',') : []
+//         }));
+
+//         res.status(200).json(results);
+//     });
+// });
 router.get('/like-items/:name', (req, res) => {
     const name = req.params.name;
-    console.log("Keyword:", name); 
+    console.log("Keyword:", name);
 
     const query = `
-        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+        LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
         WHERE f.Name LIKE ?
+        GROUP BY f.FurnitureId
     `;
 
     db.query(query, ["%" + name + "%"], (err, results) => {

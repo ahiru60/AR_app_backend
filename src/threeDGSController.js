@@ -147,7 +147,7 @@ router.get('/capture/:slug', checkApiKey, async (req, res) => {
 });
 
 //save capture slug
-router.get('/save-capture/', checkApiKey, async (req, res) => {
+router.post('/save-capture/', checkApiKey, async (req, res) => {
   const capture = req.body;
   db.query('INSERT INTO ar_visualization SET ?', capture, (err, results) => {
     if (err) {
