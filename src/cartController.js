@@ -14,55 +14,53 @@ router.post('/item', (req, res) => {
 });
 
 router.post('/items', (req, res) => {
-    const user = req.body; // Expecting an array of items
-    console.log("Received user:", user);
-    db.beginTransaction((err) => {
-        if (err) {
-          console.error('Error starting transaction', err);
-          return res.status(500).send('Server error');
+  const user = req.body; // Expecting an array of items
+  console.log("Received user:", user);
+
+  db.beginTransaction((err) => {
+      if (err) {
+        console.error('Error starting transaction', err);
+        return res.status(500).send('Server error');
+      }
+
+      // Using SQL join to get the CartID, associated cart items, and furniture details in one query
+      const query = `
+        SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, f.StockQuantity, f.Material, f.Dimensions, f.Weight
+        FROM cart_items ci
+        JOIN furniture f ON ci.FurnitureID = f.FurnitureID
+        JOIN carts c ON ci.CartID = c.CartID
+        WHERE c.UserID = ?
+      `;
+
+      db.query(query, [user.UserID], (error, results) => {
+        if (error) {
+          return db.rollback(() => {
+            console.error('Error executing query', error);
+            res.status(500).send('Server error');
+          });
         }
-  
-        // Find the CartID from carts table where UserID = user.userId
-        db.query('SELECT CartID FROM carts WHERE UserID = ?', [user.UserID], (error, results) => {
-          if (error) {
+
+        if (results.length === 0) {
+          return db.rollback(() => {
+            res.status(404).send('No cart items found for the user');
+          });
+        }
+
+        db.commit((err) => {
+          if (err) {
             return db.rollback(() => {
-              console.error('Error executing query', error);
+              console.error('Error committing transaction', err);
               res.status(500).send('Server error');
             });
           }
-  
-          if (results.length === 0) {
-            return db.rollback(() => {
-              res.status(404).send('Cart not found for the user');
-            });
-          }
-  
-          const cartId = results[0].CartID;
-  
-          // Find the user's cart items from cart_items table using the found CartID
-          db.query('SELECT * FROM cart_items WHERE CartID = ?', [cartId], (error, results) => {
-            if (error) {
-              return db.rollback(() => {
-                console.error('Error executing query', error);
-                res.status(500).send('Server error');
-              });
-            }
-  
-            db.commit((err) => {
-              if (err) {
-                return db.rollback(() => {
-                  console.error('Error committing transaction', err);
-                  res.status(500).send('Server error');
-                });
-              }
-  
-              // Send the cart items as the response
-              res.json(results);
-            });
-          });
+
+          // Send the cart items along with furniture details as the response
+          res.json(results);
         });
       });
-    });
+  });
+});
+
 
     // router.delete('/item/:id', (req, res) => {
     //     const itemId = req.params.id;
