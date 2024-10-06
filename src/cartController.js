@@ -23,17 +23,18 @@ router.post('/items', (req, res) => {
           return res.status(500).send('Server error');
       }
 
-      // SQL query to get CartItems, Furniture details, and ImageURL from furniture_images
+      // SQL query to get CartItems, Furniture details, and all ImageURLs from furniture_images
       const query = `
         SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, 
                f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, 
                f.StockQuantity, f.Material, f.Dimensions, f.Weight, 
-               fi.ImageURL
+               GROUP_CONCAT(fi.ImageURL) AS ImageURLs
         FROM cart_items ci
         JOIN furniture f ON ci.FurnitureID = f.FurnitureID
         JOIN carts c ON ci.CartID = c.CartID
         LEFT JOIN furniture_images fi ON f.FurnitureID = fi.FurnitureID
         WHERE c.UserID = ?
+        GROUP BY ci.CartItemID
       `;
 
       db.query(query, [user.UserID], (error, results) => {
@@ -50,6 +51,12 @@ router.post('/items', (req, res) => {
               });
           }
 
+          // Process ImageURLs into an array
+          const processedResults = results.map(item => ({
+              ...item,
+              ImageURLs: item.ImageURLs ? item.ImageURLs.split(',') : []
+          }));
+
           db.commit((err) => {
               if (err) {
                   return db.rollback(() => {
@@ -59,7 +66,7 @@ router.post('/items', (req, res) => {
               }
 
               // Send the cart items along with furniture and image details as the response
-              res.json(results);
+              res.json(processedResults);
           });
       });
   });
