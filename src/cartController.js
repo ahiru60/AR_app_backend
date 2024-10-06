@@ -32,7 +32,7 @@ router.post('/items', (req, res) => {
         FROM cart_items ci
         JOIN furniture f ON ci.FurnitureID = f.FurnitureID
         JOIN carts c ON ci.CartID = c.CartID
-        LEFT JOIN furniture_images fi ON f.FurnitureID = fi.FurnitureID
+        LEFT JOIN furnitureimages fi ON f.FurnitureID = fi.FurnitureID
         WHERE c.UserID = ?
         GROUP BY ci.CartItemID
       `;
