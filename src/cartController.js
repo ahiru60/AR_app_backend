@@ -19,44 +19,48 @@ router.post('/items', (req, res) => {
 
   db.beginTransaction((err) => {
       if (err) {
-        console.error('Error starting transaction', err);
-        return res.status(500).send('Server error');
+          console.error('Error starting transaction', err);
+          return res.status(500).send('Server error');
       }
 
-      // Using SQL join to get the CartID, associated cart items, and furniture details in one query
+      // SQL query to get CartItems, Furniture details, and ImageURL from furniture_images
       const query = `
-        SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, f.StockQuantity, f.Material, f.Dimensions, f.Weight
+        SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, 
+               f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, 
+               f.StockQuantity, f.Material, f.Dimensions, f.Weight, 
+               fi.ImageURL
         FROM cart_items ci
         JOIN furniture f ON ci.FurnitureID = f.FurnitureID
         JOIN carts c ON ci.CartID = c.CartID
+        LEFT JOIN furniture_images fi ON f.FurnitureID = fi.FurnitureID
         WHERE c.UserID = ?
       `;
 
       db.query(query, [user.UserID], (error, results) => {
-        if (error) {
-          return db.rollback(() => {
-            console.error('Error executing query', error);
-            res.status(500).send('Server error');
-          });
-        }
-
-        if (results.length === 0) {
-          return db.rollback(() => {
-            res.status(404).send('No cart items found for the user');
-          });
-        }
-
-        db.commit((err) => {
-          if (err) {
-            return db.rollback(() => {
-              console.error('Error committing transaction', err);
-              res.status(500).send('Server error');
-            });
+          if (error) {
+              return db.rollback(() => {
+                  console.error('Error executing query', error);
+                  res.status(500).send('Server error');
+              });
           }
 
-          // Send the cart items along with furniture details as the response
-          res.json(results);
-        });
+          if (results.length === 0) {
+              return db.rollback(() => {
+                  res.status(404).send('No cart items found for the user');
+              });
+          }
+
+          db.commit((err) => {
+              if (err) {
+                  return db.rollback(() => {
+                      console.error('Error committing transaction', err);
+                      res.status(500).send('Server error');
+                  });
+              }
+
+              // Send the cart items along with furniture and image details as the response
+              res.json(results);
+          });
       });
   });
 });
