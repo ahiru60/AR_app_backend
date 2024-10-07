@@ -73,18 +73,6 @@ router.post('/items', (req, res) => {
 });
 
 
-    // router.delete('/item/:id', (req, res) => {
-    //     const itemId = req.params.id;
-    //     db.query('DELETE FROM cart_items WHERE ItemID = ?', [itemId], (err, results) => {
-    //         if (err) {
-    //             return res.status(500).json({ error: err });
-    //         }
-    //         if (results.affectedRows === 0) {
-    //             return res.status(404).json({ message: 'Item not found' });
-    //         }
-    //         res.status(200).json({ message: 'Item deleted successfully' });
-    //     });
-    // });
     
     // Delete multiple items from the cart
     router.post('/delete', (req, res) => {
