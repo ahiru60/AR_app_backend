@@ -14,21 +14,16 @@ router.post('/item', (req, res) => {
 });
 
 router.post('/items', (req, res) => {
-    const user = req.body; // Expecting an object with userID
-    console.log("Received user:", user);
-  
-    // Function to handle fatal errors
-    const handleFatalError = (err, message) => {
-      console.error(message, err);
-      return res.status(500).send('Server error');
-    };
-  
-    // Start a transaction
-    db.beginTransaction((err) => {
+  const user = req.body; // Expecting an array of items
+  console.log("Received user:", user);
+
+  db.beginTransaction((err) => {
       if (err) {
-        return handleFatalError(err, 'Error starting transaction');
+          console.error('Error starting transaction', err);
+          return res.status(500).send('Server error');
       }
-  
+
+      // SQL query to get CartItems, Furniture details, and all ImageURLs from furniture_images
       const query = `
         SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, 
                f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, 
@@ -41,36 +36,41 @@ router.post('/items', (req, res) => {
         WHERE c.UserID = ?
         GROUP BY ci.CartItemID
       `;
-  
-      // Query to get the cart items and furniture details
+
       db.query(query, [user.UserID], (error, results) => {
-        if (error) {
-          return db.rollback(() => handleFatalError(error, 'Error executing query'));
-        }
-  
-        if (results.length === 0) {
-          return db.rollback(() => res.status(404).send('No cart items found for the user'));
-        }
-  
-        // Process ImageURLs into an array
-        const processedResults = results.map(item => ({
-          ...item,
-          ImageURLs: item.ImageURLs ? item.ImageURLs.split(',') : []
-        }));
-  
-        // Commit the transaction
-        db.commit((err) => {
-          if (err) {
-            return db.rollback(() => handleFatalError(err, 'Error committing transaction'));
+          if (error) {
+              return db.rollback(() => {
+                  console.error('Error executing query', error);
+                  res.status(500).send('Server error');
+              });
           }
-  
-          // Send the cart items along with furniture and image details as the response
-          res.json(processedResults);
-        });
+
+          if (results.length === 0) {
+              return db.rollback(() => {
+                  res.status(404).send('No cart items found for the user');
+              });
+          }
+
+          // Process ImageURLs into an array
+          const processedResults = results.map(item => ({
+              ...item,
+              ImageURLs: item.ImageURLs ? item.ImageURLs.split(',') : []
+          }));
+
+          db.commit((err) => {
+              if (err) {
+                  return db.rollback(() => {
+                      console.error('Error committing transaction', err);
+                      res.status(500).send('Server error');
+                  });
+              }
+
+              // Send the cart items along with furniture and image details as the response
+              res.json(processedResults);
+          });
       });
-    });
   });
-  
+});
 
 
     // router.delete('/item/:id', (req, res) => {
