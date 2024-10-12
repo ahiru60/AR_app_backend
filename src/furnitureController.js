@@ -238,7 +238,7 @@ router.put('/:id', (req, res) => {
             if (imageUrls.length > 0) {
                 // Concatenate the provided image URLs into a single string
                 const imageUrlString = imageUrls.join(',');
-
+                console.log("updating image urls"+imageUrlString)       
                 // Second query: Update images in the 'furnitureimages' table
                 const updateImagesQuery = 'UPDATE furnitureimages SET ImageURL = ? WHERE FurnitureId = ?';
                 db.query(updateImagesQuery, [imageUrlString, furnitureId], (err, imageResults) => {
