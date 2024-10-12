@@ -217,7 +217,9 @@ router.put('/:id', (req, res) => {
 
     // Check if any of the image URLs are provided (not empty)
     const imageUrls = [furniture.ImageUrl1, furniture.ImageUrl2, furniture.ImageUrl3].filter(url => url && url.trim() !== '');
-    
+    delete furniture.ImageUrl1;
+    delete furniture.ImageUrl2;
+    delete furniture.ImageUrl3;
     // Start transaction
     db.beginTransaction(err => {
         if (err) {
