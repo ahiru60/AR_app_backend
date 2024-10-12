@@ -202,13 +202,44 @@ router.get('/:id', (req, res) => {
 // Create a new furniture
 router.post('/', (req, res) => {
     const furniture = req.body;
+
+    // Extract image URLs from the furniture object
+    const imageUrls = [furniture.ImageUrl1, furniture.ImageUrl2, furniture.ImageUrl3].filter(url => url && url.trim() !== '');
+
+    // Remove image URLs from the furniture object before inserting into the furniture table
+    delete furniture.ImageUrl1;
+    delete furniture.ImageUrl2;
+    delete furniture.ImageUrl3;
+
+    // Insert the furniture record
     db.query('INSERT INTO furniture SET ?', furniture, (err, results) => {
         if (err) {
             return res.status(500).json({ error: err });
         }
-        res.status(201).json({ id: results.insertId });
+
+        const furnitureId = results.insertId;
+
+        // If image URLs are provided, insert them into the furniture_images table
+        if (imageUrls.length > 0) {
+            const imageRecords = imageUrls.map(url => [furnitureId, url]);
+
+            // Assuming your furniture_images table has columns: furniture_id and image_url
+            const sql = 'INSERT INTO furniture_images (furniture_id, image_url) VALUES ?';
+
+            db.query(sql, [imageRecords], (err2, results2) => {
+                if (err2) {
+                    return res.status(500).json({ error: err2 });
+                }
+
+                res.status(201).json({ id: furnitureId });
+            });
+        } else {
+            // If no images, just respond with the furniture ID
+            res.status(201).json({ id: furnitureId });
+        }
     });
 });
+
 
 // Update furniture details and images
 router.put('/:id', (req, res) => {
