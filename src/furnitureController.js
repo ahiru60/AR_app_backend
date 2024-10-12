@@ -224,7 +224,7 @@ router.post('/', (req, res) => {
             const imageRecords = imageUrls.map(url => [furnitureId, url]);
 
             // Assuming your furniture_images table has columns: furniture_id and image_url
-            const sql = 'INSERT INTO furniture_images (furniture_id, image_url) VALUES ?';
+            const sql = 'INSERT INTO furnitureimages (furniture_id, image_url) VALUES ?';
 
             db.query(sql, [imageRecords], (err2, results2) => {
                 if (err2) {
