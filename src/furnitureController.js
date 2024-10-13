@@ -150,72 +150,30 @@ router.post('/', (req, res) => {
     delete furniture.ImageUrl2;
     delete furniture.ImageUrl3;
 
-    db.getConnection((err, connection) => {
+    db.query('INSERT INTO furniture SET ?', furniture, (err, results) => {
         if (err) {
-            console.error('Error getting DB connection:', err);
+            console.error('Error inserting furniture:', err);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        connection.beginTransaction(err => {
-            if (err) {
-                connection.release();
-                console.error('Error starting transaction:', err);
-                return res.status(500).json({ error: 'Internal server error' });
-            }
+        const furnitureId = results.insertId;
 
-            connection.query('INSERT INTO furniture SET ?', furniture, (err, results) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        connection.release();
-                        console.error('Error inserting furniture:', err);
-                        return res.status(500).json({ error: 'Internal server error' });
-                    });
+        if (imageUrls.length > 0) {
+            const imageRecords = imageUrls.map(url => [furnitureId, url]);
+            const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
+
+            db.query(sql, [imageRecords], (err2, results2) => {
+                if (err2) {
+                    console.error('Error inserting furniture images:', err2);
+                    return res.status(500).json({ error: 'Internal server error' });
                 }
 
-                const furnitureId = results.insertId;
-
-                if (imageUrls.length > 0) {
-                    const imageRecords = imageUrls.map(url => [furnitureId, url]);
-                    const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
-
-                    connection.query(sql, [imageRecords], (err, results) => {
-                        if (err) {
-                            return connection.rollback(() => {
-                                connection.release();
-                                console.error('Error inserting furniture images:', err);
-                                return res.status(500).json({ error: 'Internal server error' });
-                            });
-                        }
-
-                        connection.commit(err => {
-                            if (err) {
-                                return connection.rollback(() => {
-                                    connection.release();
-                                    console.error('Error committing transaction:', err);
-                                    return res.status(500).json({ error: 'Internal server error' });
-                                });
-                            }
-
-                            connection.release();
-                            res.status(201).json({ id: furnitureId });
-                        });
-                    });
-                } else {
-                    connection.commit(err => {
-                        if (err) {
-                            return connection.rollback(() => {
-                                connection.release();
-                                console.error('Error committing transaction:', err);
-                                return res.status(500).json({ error: 'Internal server error' });
-                            });
-                        }
-
-                        connection.release();
-                        res.status(201).json({ id: furnitureId });
-                    });
-                }
+                res.status(201).json({ id: furnitureId });
             });
-        });
+        } else {
+            // If no images, just respond with the furniture ID
+            res.status(201).json({ id: furnitureId });
+        }
     });
 });
 
@@ -236,80 +194,34 @@ router.put('/:id', (req, res) => {
     delete furniture.ImageUrl2;
     delete furniture.ImageUrl3;
 
-    db.getConnection((err, connection) => {
+    db.query('UPDATE furniture SET ? WHERE FurnitureID = ?', [furniture, furnitureId], (err, results) => {
         if (err) {
-            console.error('Error getting DB connection:', err);
+            console.error('Error updating furniture:', err);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        connection.beginTransaction(err => {
+        // Delete existing images for the furniture
+        db.query('DELETE FROM furnitureimages WHERE FurnitureId = ?', [furnitureId], (err, results) => {
             if (err) {
-                connection.release();
-                console.error('Error starting transaction:', err);
+                console.error('Error deleting old images:', err);
                 return res.status(500).json({ error: 'Internal server error' });
             }
 
-            connection.query('UPDATE furniture SET ? WHERE FurnitureID = ?', [furniture, furnitureId], (err, results) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        connection.release();
-                        console.error('Error updating furniture:', err);
+            if (imageUrls.length > 0) {
+                const imageRecords = imageUrls.map(url => [furnitureId, url]);
+                const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
+
+                db.query(sql, [imageRecords], (err2, results2) => {
+                    if (err2) {
+                        console.error('Error inserting new images:', err2);
                         return res.status(500).json({ error: 'Internal server error' });
-                    });
-                }
-
-                // Delete existing images for the furniture
-                connection.query('DELETE FROM furnitureimages WHERE FurnitureId = ?', [furnitureId], (err, results) => {
-                    if (err) {
-                        return connection.rollback(() => {
-                            connection.release();
-                            console.error('Error deleting old images:', err);
-                            return res.status(500).json({ error: 'Internal server error' });
-                        });
                     }
 
-                    if (imageUrls.length > 0) {
-                        const imageRecords = imageUrls.map(url => [furnitureId, url]);
-                        const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
-
-                        connection.query(sql, [imageRecords], (err, results) => {
-                            if (err) {
-                                return connection.rollback(() => {
-                                    connection.release();
-                                    console.error('Error inserting new images:', err);
-                                    return res.status(500).json({ error: 'Internal server error' });
-                                });
-                            }
-
-                            connection.commit(err => {
-                                if (err) {
-                                    return connection.rollback(() => {
-                                        connection.release();
-                                        console.error('Error committing transaction:', err);
-                                        return res.status(500).json({ error: 'Internal server error' });
-                                    });
-                                }
-
-                                connection.release();
-                                res.json({ message: 'Furniture and images updated successfully' });
-                            });
-                        });
-                    } else {
-                        connection.commit(err => {
-                            if (err) {
-                                return connection.rollback(() => {
-                                    connection.release();
-                                    console.error('Error committing transaction:', err);
-                                    return res.status(500).json({ error: 'Internal server error' });
-                                });
-                            }
-
-                            connection.release();
-                            res.json({ message: 'Furniture updated successfully (no images provided)' });
-                        });
-                    }
+                    res.json({ message: 'Furniture and images updated successfully' });
                 });
-            });
+            } else {
+                res.json({ message: 'Furniture updated successfully (no images provided)' });
+            }
         });
     });
 });
@@ -318,53 +230,21 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
     const furnitureId = req.params.id;
 
-    db.getConnection((err, connection) => {
+    // Delete images associated with the furniture
+    db.query('DELETE FROM furnitureimages WHERE FurnitureId = ?', [furnitureId], (err, results) => {
         if (err) {
-            console.error('Error getting DB connection:', err);
+            console.error('Error deleting images:', err);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        connection.beginTransaction(err => {
+        // Delete the furniture
+        db.query('DELETE FROM furniture WHERE FurnitureID = ?', [furnitureId], (err, results) => {
             if (err) {
-                connection.release();
-                console.error('Error starting transaction:', err);
+                console.error('Error deleting furniture:', err);
                 return res.status(500).json({ error: 'Internal server error' });
             }
 
-            // Delete images associated with the furniture
-            connection.query('DELETE FROM furnitureimages WHERE FurnitureId = ?', [furnitureId], (err, results) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        connection.release();
-                        console.error('Error deleting images:', err);
-                        return res.status(500).json({ error: 'Internal server error' });
-                    });
-                }
-
-                // Delete the furniture
-                connection.query('DELETE FROM furniture WHERE FurnitureID = ?', [furnitureId], (err, results) => {
-                    if (err) {
-                        return connection.rollback(() => {
-                            connection.release();
-                            console.error('Error deleting furniture:', err);
-                            return res.status(500).json({ error: 'Internal server error' });
-                        });
-                    }
-
-                    connection.commit(err => {
-                        if (err) {
-                            return connection.rollback(() => {
-                                connection.release();
-                                console.error('Error committing transaction:', err);
-                                return res.status(500).json({ error: 'Internal server error' });
-                            });
-                        }
-
-                        connection.release();
-                        res.json({ message: 'Furniture deleted successfully' });
-                    });
-                });
-            });
+            res.json({ message: 'Furniture deleted successfully' });
         });
     });
 });
