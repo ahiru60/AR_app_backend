@@ -171,7 +171,7 @@ router.post('/', (req, res) => {
                 res.status(201).json({ id: furnitureId });
             });
         } else {
-            // If no images, just respond with the furniture ID
+            // If no images, just respond with the furniture ID 
             res.status(201).json({ id: furnitureId });
         }
     });
