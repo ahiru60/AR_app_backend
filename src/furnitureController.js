@@ -30,13 +30,15 @@ router.get('/', (req, res) => {
     });
 });
 
-// Get all products
+// Get all products including the name of the user who created them
 router.get('/all', (req, res) => {
     const query = `
-        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, u.UserName
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
+        INNER JOIN furniture_user fu ON f.FurnitureId = fu.FurnitureID
+        INNER JOIN users u ON fu.UserID = u.UserID
         GROUP BY f.FurnitureId
     `;
 
@@ -49,12 +51,14 @@ router.get('/all', (req, res) => {
         // Parse the concatenated image URLs into arrays
         const products = results.map(product => ({
             ...product,
-            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : []
+            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : [],
+            CreatedBy: product.UserName // Add the name of the user who created the furniture
         }));
 
         res.json(products);
     });
 });
+
 
 // Get all products created by the logged-in user
 router.get('/user-all/:userId', (req, res) => {
