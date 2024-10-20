@@ -230,7 +230,7 @@ router.post('/place-order', (req, res) => {
                         }
 
                         // Log user interaction
-                        logUserInteraction(UserID, 'Placed an order');
+                        logUserInteraction(UserID, 'Placed an order orderId:'+OrderID);
 
                         res.status(200).json({ message: 'Order placed successfully', OrderID });
                     });
