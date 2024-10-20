@@ -57,8 +57,9 @@ router.get('/all', (req, res) => {
 });
 
 // Get all products created by the logged-in user
-router.get('/user-all', (req, res) => {
-    const userId = req.query.userId; // Assuming the UserID is passed as a query parameter
+router.get('/user-all/:userId', (req, res) => {
+    //const userId = req.query.userId; // Assuming the UserID is passed as a query parameter
+    const userId = req.params.userId;
 
     if (!userId) {
         return res.status(400).json({ error: 'UserID is required' });
