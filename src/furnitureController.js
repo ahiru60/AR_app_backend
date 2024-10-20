@@ -56,6 +56,41 @@ router.get('/all', (req, res) => {
     });
 });
 
+// Get all products created by the logged-in user
+router.get('/user-all', (req, res) => {
+    const userId = req.query.userId; // Assuming the UserID is passed as a query parameter
+
+    if (!userId) {
+        return res.status(400).json({ error: 'UserID is required' });
+    }
+
+    const query = `
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
+        FROM furniture f
+        LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
+        LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
+        INNER JOIN furniture_user fu ON f.FurnitureId = fu.FurnitureID
+        WHERE fu.UserID = ?
+        GROUP BY f.FurnitureId
+    `;
+
+    db.query(query, [userId], (err, results) => {
+        if (err) {
+            console.error('Error fetching user-specific products:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Parse the concatenated image URLs into arrays
+        const products = results.map(product => ({
+            ...product,
+            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : []
+        }));
+
+        res.json(products);
+    });
+});
+
+
 // Get furnitures by name
 router.get('/like-items/:name', (req, res) => {
     const name = req.params.name;
