@@ -117,7 +117,7 @@ router.get('/user-all/:userId', (req, res) => {
 });
 
 // Get furnitures by name
-router.get('/like-items/:name', (req, res) => {
+router.get('/like-items/:userId/:name', (req, res) => {
     const name = req.params.name;
 
     const query = `
