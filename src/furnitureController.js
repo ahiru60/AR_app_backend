@@ -136,7 +136,8 @@ router.get('/:id', (req, res) => {
 
 // Create a new furniture
 router.post('/', (req, res) => {
-    const furniture = req.body;
+    const furniture = req.body.furniture;
+    const userId = req.body.userId; // Assuming the UserID is passed in the request body
 
     // Extract image URLs from the furniture object
     const imageUrls = [
@@ -150,6 +151,7 @@ router.post('/', (req, res) => {
     delete furniture.ImageUrl2;
     delete furniture.ImageUrl3;
 
+    // First, insert the furniture record into the 'furniture' table
     db.query('INSERT INTO furniture SET ?', furniture, (err, results) => {
         if (err) {
             console.error('Error inserting furniture:', err);
@@ -158,24 +160,35 @@ router.post('/', (req, res) => {
 
         const furnitureId = results.insertId;
 
-        if (imageUrls.length > 0) {
-            const imageRecords = imageUrls.map(url => [furnitureId, url]);
-            const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
+        // Now insert the relationship between user and furniture into 'furniture_user' table
+        const furnitureUserQuery = 'INSERT INTO furniture_user (FurnitureID, UserID) VALUES (?, ?)';
+        db.query(furnitureUserQuery, [furnitureId, userId], (err3, results3) => {
+            if (err3) {
+                console.error('Error inserting into furniture_user:', err3);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
 
-            db.query(sql, [imageRecords], (err2, results2) => {
-                if (err2) {
-                    console.error('Error inserting furniture images:', err2);
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
+            // Insert the furniture images if they exist
+            if (imageUrls.length > 0) {
+                const imageRecords = imageUrls.map(url => [furnitureId, url]);
+                const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
 
+                db.query(sql, [imageRecords], (err2, results2) => {
+                    if (err2) {
+                        console.error('Error inserting furniture images:', err2);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+
+                    res.status(201).json({ id: furnitureId });
+                });
+            } else {
+                // If no images, just respond with the furniture ID 
                 res.status(201).json({ id: furnitureId });
-            });
-        } else {
-            // If no images, just respond with the furniture ID 
-            res.status(201).json({ id: furnitureId });
-        }
+            }
+        });
     });
 });
+
 
 // Update furniture details and images
 router.put('/:id', (req, res) => {
