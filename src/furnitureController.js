@@ -34,7 +34,7 @@ router.get('/:userId', (req, res) => {
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        if(userId!= ""){
+        if(userId!= "0"){
             // Log detailed user interaction (e.g., "Viewed random products")
         logUserInteraction(userId, 'Viewed random furniture products');
         }
