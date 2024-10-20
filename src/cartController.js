@@ -23,7 +23,7 @@ router.post('/item', (req, res) => {
         }
         
         // Log user interaction
-        logUserInteraction(item.UserID, 'Added item to cart');
+        //logUserInteraction(item.UserID, 'Added item to cart');
         
         res.status(200).json(results);
     });
@@ -174,8 +174,6 @@ router.post('/delete', (req, res) => {
         .then((affectedRowsArray) => {
             const totalDeleted = affectedRowsArray.reduce((acc, curr) => acc + curr, 0);
             
-            // Log user interaction
-            logUserInteraction(items[0].UserID, 'Deleted items from cart');
             
             res.status(200).json({ message: 'Items deleted successfully', totalDeleted });
         })
