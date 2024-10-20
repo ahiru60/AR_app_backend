@@ -33,8 +33,8 @@ router.get('/:userId', (req, res) => {
             console.error('Error fetching random products:', err);
             return res.status(500).json({ error: 'Internal server error' });
         }
-
-        if(userId!== "0"){
+        console.log(userId)
+        if(userId !== "0"){
             // Log detailed user interaction (e.g., "Viewed random products")
         logUserInteraction(userId, 'Viewed random furniture products');
         }
