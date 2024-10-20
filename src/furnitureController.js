@@ -31,7 +31,7 @@ router.get('/:userId', (req, res) => {
     const userId = req.params.userId; 
 
     const query = `
-        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, u.Name as Username
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, u.UserName
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
@@ -276,7 +276,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Delete furniture
-router.delete('/:id', (req, res) => {
+router.delete('/:id', (req, res) => { 
     const furnitureId = req.params.id;
     const userId = req.query.userId; // Assuming the UserID is passed in the query
 
