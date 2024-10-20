@@ -5,7 +5,7 @@ const db = require('./db');
 // Get random products including the name of the user who created them
 router.get('/', (req, res) => {
     const query = `
-        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, u.Name
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, u.Name as Username
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
