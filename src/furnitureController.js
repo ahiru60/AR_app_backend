@@ -13,8 +13,8 @@ const logUserInteraction = (userId, actionDescription) => {
 };
 
 // Get random products including the name of the user who created them
-router.get('/', (req, res) => {
-    const userId = req.query.userId; // Assuming UserID is passed in the query or use session
+router.get('/:userId', (req, res) => {
+    const userId = req.params.userId; 
 
     const query = `
         SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, u.Name as Username
