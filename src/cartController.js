@@ -118,5 +118,71 @@ router.post('/items', (req, res) => {
 //         res.status(200).json(results);
 //     });
 // });
+router.post('/place-order', (req, res) => {
+    const { UserID, TotalAmount, ShippingAddress, PaymentMethod, items } = req.body;
+    
+    // Check if required fields are present
+    if (!UserID || !TotalAmount || !ShippingAddress || !PaymentMethod || !items || items.length === 0) {
+        return res.status(400).json({ message: 'Missing required fields or no items provided' });
+    }
+
+    // Start the transaction
+    db.beginTransaction((err) => {
+        if (err) {
+            console.error('Error starting transaction', err);
+            return res.status(500).send('Server error');
+        }
+
+        // Insert into orders table
+        const orderQuery = 'INSERT INTO orders (UserID, OrderDate, TotalAmount, ShippingAddress, PaymentMethod) VALUES (?, NOW(), ?, ?, ?)';
+        db.query(orderQuery, [UserID, TotalAmount, ShippingAddress, PaymentMethod], (err, result) => {
+            if (err) {
+                return db.rollback(() => {
+                    console.error('Error inserting into orders', err);
+                    res.status(500).send('Server error');
+                });
+            }
+
+            const OrderID = result.insertId; // Get the inserted order's ID
+
+            // Insert each item into order_details table
+            const orderDetailsPromises = items.map((item) => {
+                return new Promise((resolve, reject) => {
+                    const orderDetailQuery = 'INSERT INTO order_details (OrderID, FurnitureID, Quantity, Price) VALUES (?, ?, ?, ?)';
+                    db.query(orderDetailQuery, [OrderID, item.FurnitureID, item.Quantity, item.Price], (err, results) => {
+                        if (err) {
+                            return reject(err);
+                        }
+                        resolve(results);
+                    });
+                });
+            });
+
+            // Wait for all order details to be inserted
+            Promise.all(orderDetailsPromises)
+                .then(() => {
+                    // Commit the transaction
+                    db.commit((err) => {
+                        if (err) {
+                            return db.rollback(() => {
+                                console.error('Error committing transaction', err);
+                                res.status(500).send('Server error');
+                            });
+                        }
+
+                        res.status(200).json({ message: 'Order placed successfully', OrderID });
+                    });
+                })
+                .catch((err) => {
+                    // Rollback in case of any error
+                    db.rollback(() => {
+                        console.error('Error inserting order details', err);
+                        res.status(500).send('Server error');
+                    });
+                });
+        });
+    });
+});
+
 
 module.exports = router;
