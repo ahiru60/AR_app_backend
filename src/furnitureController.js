@@ -136,7 +136,7 @@ router.get('/like-items/:name', (req, res) => {
         }
 
         // Log user interaction (e.g., "Searched for furniture with name [Name]")
-        logUserInteraction(req.query.userId, `Searched for furniture with name ${name}`);
+        logUserInteraction(req.params.userId, `Searched for furniture with name ${name}`);
 
         const products = results.map(product => ({
             ...product,
