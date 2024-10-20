@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
-// Get item by id
+
+// add items to cart
 router.post('/item', (req, res) => {
     const item= req.body;
     console.log("res:", req.body); 
@@ -72,6 +73,72 @@ router.post('/items', (req, res) => {
   });
 });
 
+router.post('/get-orders', (req, res) => {
+    const { UserID } = req.body;
+
+    // Check if UserID is provided
+    if (!UserID) {
+        return res.status(400).json({ message: 'UserID is required' });
+    }
+
+    // SQL query to get orders and their related details from the order_details table
+    const query = `
+        SELECT 
+            o.OrderID, o.UserID, o.OrderDate, o.TotalAmount, o.ShippingAddress, o.PaymentMethod,
+            od.OrderDetailsID, od.FurnitureID, od.Quantity, od.Price AS Price, 
+            f.Name AS Name, f.Description AS Description
+        FROM orders o
+        JOIN order_details od ON o.OrderID = od.OrderID
+        JOIN furniture f ON od.FurnitureID = f.FurnitureID
+        WHERE o.UserID = ?
+        ORDER BY o.OrderDate DESC
+    `;
+
+    db.query(query, [UserID], (err, results) => {
+        if (err) {
+            console.error('Error fetching orders:', err);
+            return res.status(500).json({ error: 'Server error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No orders found for this user' });
+        }
+
+        // Process the results to group by OrderID, including items in an array for each order
+        const orders = {};
+        
+        results.forEach(row => {
+            const orderID = row.OrderID;
+
+            if (!orders[orderID]) {
+                orders[orderID] = {
+                    OrderID: row.OrderID,
+                    UserID: row.UserID,
+                    OrderDate: row.OrderDate,
+                    TotalAmount: row.TotalAmount,
+                    ShippingAddress: row.ShippingAddress,
+                    PaymentMethod: row.PaymentMethod,
+                    items: []
+                };
+            }
+
+            orders[orderID].items.push({
+                OrderDetailsID: row.OrderDetailsID,
+                FurnitureID: row.FurnitureID,
+                Name: row.Name,
+                Description: row.Description,
+                Quantity: row.Quantity,
+                ItemPrice: row.ItemPrice
+            });
+        });
+
+        // Convert the orders object into an array
+        const ordersArray = Object.values(orders);
+
+        // Send the grouped order data as the response
+        res.status(200).json(ordersArray);
+    });
+});
 
     
     // Delete multiple items from the cart
