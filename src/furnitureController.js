@@ -246,7 +246,7 @@ router.put('/:id', (req, res) => {
     const userId = req.body.userId; // Assuming the UserID is passed in the request body
 
     // Log detailed user interaction (e.g., "Updated furniture [FurnitureName]")
-    logUserInteraction(userId, `Updated furniture ${furniture.Name}`);
+   // logUserInteraction(userId, `Updated furniture ${furniture.Name}`);
 
     // Continue with update logic...
     // ...

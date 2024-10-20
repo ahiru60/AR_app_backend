@@ -2,86 +2,99 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 
-// add items to cart
+// Helper function to log interactions
+const logUserInteraction = (userId, actionDescription) => {
+    const logQuery = 'INSERT INTO user_logs (UserID, ActionDescription) VALUES (?, ?)';
+    db.query(logQuery, [userId, actionDescription], (err) => {
+        if (err) {
+            console.error('Error logging user interaction:', err);
+        }
+    });
+};
+
+// Add items to cart
 router.post('/item', (req, res) => {
-    const item= req.body;
-    console.log("res:", req.body); 
-    db.query('INSERT INTO cart_items SET ?',[item],(err, results) => {
-        if (err){
+    const item = req.body;
+    console.log("res:", req.body);
+    
+    db.query('INSERT INTO cart_items SET ?', [item], (err, results) => {
+        if (err) {
             return res.status(500).json({ error: err });
         }
+        
+        // Log user interaction
+        logUserInteraction(item.UserID, 'Added item to cart');
+        
         res.status(200).json(results);
     });
 });
 
+// Fetch all cart items for the user
 router.post('/items', (req, res) => {
-  const user = req.body; // Expecting an array of items
-  console.log("Received user:", user);
+    const user = req.body; // Expecting an array of items
+    console.log("Received user:", user);
 
-  db.beginTransaction((err) => {
-      if (err) {
-          console.error('Error starting transaction', err);
-          return res.status(500).send('Server error');
-      }
+    db.beginTransaction((err) => {
+        if (err) {
+            console.error('Error starting transaction', err);
+            return res.status(500).send('Server error');
+        }
 
-      // SQL query to get CartItems, Furniture details, and all ImageURLs from furniture_images
-      const query = `
-        SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, 
-               f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, 
-               f.StockQuantity, f.Material, f.Dimensions, f.Weight, 
-               GROUP_CONCAT(fi.ImageURL) AS ImageURLs
-        FROM cart_items ci
-        JOIN furniture f ON ci.FurnitureID = f.FurnitureID
-        JOIN carts c ON ci.CartID = c.CartID
-        LEFT JOIN furnitureimages fi ON f.FurnitureID = fi.FurnitureID
-        WHERE c.UserID = ?
-        GROUP BY ci.CartItemID
-      `;
+        const query = `
+            SELECT ci.CartItemID, ci.CartID, ci.Quantity, ci.Price, 
+                   f.FurnitureID, f.Name, f.Description, f.Price AS FurniturePrice, f.Rating, f.Category, 
+                   f.StockQuantity, f.Material, f.Dimensions, f.Weight, 
+                   GROUP_CONCAT(fi.ImageURL) AS ImageURLs
+            FROM cart_items ci
+            JOIN furniture f ON ci.FurnitureID = f.FurnitureID
+            JOIN carts c ON ci.CartID = c.CartID
+            LEFT JOIN furnitureimages fi ON f.FurnitureID = fi.FurnitureID
+            WHERE c.UserID = ?
+            GROUP BY ci.CartItemID
+        `;
 
-      db.query(query, [user.UserID], (error, results) => {
-          if (error) {
-              return db.rollback(() => {
-                  console.error('Error executing query', error);
-                  res.status(500).send('Server error');
-              });
-          }
+        db.query(query, [user.UserID], (error, results) => {
+            if (error) {
+                return db.rollback(() => {
+                    console.error('Error executing query', error);
+                    res.status(500).send('Server error');
+                });
+            }
 
-          if (results.length === 0) {
-              return db.rollback(() => {
-                  res.status(404).send('No cart items found for the user');
-              });
-          }
+            if (results.length === 0) {
+                return db.rollback(() => {
+                    res.status(404).send('No cart items found for the user');
+                });
+            }
 
-          // Process ImageURLs into an array
-          const processedResults = results.map(item => ({
-              ...item,
-              ImageURLs: item.ImageURLs ? item.ImageURLs.split(',') : []
-          }));
+            const processedResults = results.map(item => ({
+                ...item,
+                ImageURLs: item.ImageURLs ? item.ImageURLs.split(',') : []
+            }));
 
-          db.commit((err) => {
-              if (err) {
-                  return db.rollback(() => {
-                      console.error('Error committing transaction', err);
-                      res.status(500).send('Server error');
-                  });
-              }
+            db.commit((err) => {
+                if (err) {
+                    return db.rollback(() => {
+                        console.error('Error committing transaction', err);
+                        res.status(500).send('Server error');
+                    });
+                }
 
-              // Send the cart items along with furniture and image details as the response
-              res.json(processedResults);
-          });
-      });
-  });
+                
+                res.json(processedResults);
+            });
+        });
+    });
 });
 
+// Fetch user orders
 router.post('/get-orders', (req, res) => {
     const { UserID } = req.body;
 
-    // Check if UserID is provided
     if (!UserID) {
         return res.status(400).json({ message: 'UserID is required' });
     }
 
-    // SQL query to get orders and their related details from the order_details table
     const query = `
         SELECT 
             o.OrderID, o.UserID, o.OrderDate, o.TotalAmount, o.ShippingAddress, o.PaymentMethod,
@@ -104,9 +117,7 @@ router.post('/get-orders', (req, res) => {
             return res.status(404).json({ message: 'No orders found for this user' });
         }
 
-        // Process the results to group by OrderID, including items in an array for each order
         const orders = {};
-        
         results.forEach(row => {
             const orderID = row.OrderID;
 
@@ -132,75 +143,61 @@ router.post('/get-orders', (req, res) => {
             });
         });
 
-        // Convert the orders object into an array
         const ordersArray = Object.values(orders);
 
-        // Send the grouped order data as the response
         res.status(200).json(ordersArray);
     });
 });
 
-    
-    // Delete multiple items from the cart
-    router.post('/delete', (req, res) => {
-      const items = req.body; // Expecting an array of item IDs
-      console.log("items:", items);
-  
-      if (!Array.isArray(items) || items.length === 0) {
-          return res.status(400).json({ message: 'Invalid input' });
-      }
-  
-      let deletionPromises = items.map((item) => {
-          return new Promise((resolve, reject) => {
-              db.query('DELETE FROM cart_items WHERE CartID = ? AND CartItemID = ?', [item.CartID, item.CartItemID], (err, results) => {
-                  if (err) {
-                      reject(err);
-                  } else {
-                      resolve(results.affectedRows);
-                  }
-              });
-          });
-      });
-  
-      Promise.all(deletionPromises)
-          .then((affectedRowsArray) => {
-              const totalDeleted = affectedRowsArray.reduce((acc, curr) => acc + curr, 0);
-              console.log('suc',{ message: 'Items deleted successfully', totalDeleted })
-              res.status(200).json({ message: 'Items deleted successfully', totalDeleted });
-          })
-          .catch((err) => {
-              res.status(500).json({ error: err });
-          });
-  });
-  
-    
+// Delete multiple items from the cart
+router.post('/delete', (req, res) => {
+    const items = req.body; // Expecting an array of item IDs
+    console.log("items:", items);
 
-// router.post('/', (req, res) => {
-//     const userId = req.body;
-//     console.log("userID:", userId); 
-//     db.query('SELECT * FROM cart_items WHERE Name = (SELECT CartID FROM cart WHERE userID = ?)', [userId], (err, results) => {
-//         if (err){
-//             return res.status(500).json({ error: err });
-//         }
-//         res.status(200).json(results);
-//     });
-// });
+    if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ message: 'Invalid input' });
+    }
+
+    let deletionPromises = items.map((item) => {
+        return new Promise((resolve, reject) => {
+            db.query('DELETE FROM cart_items WHERE CartID = ? AND CartItemID = ?', [item.CartID, item.CartItemID], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results.affectedRows);
+                }
+            });
+        });
+    });
+
+    Promise.all(deletionPromises)
+        .then((affectedRowsArray) => {
+            const totalDeleted = affectedRowsArray.reduce((acc, curr) => acc + curr, 0);
+            
+            // Log user interaction
+            logUserInteraction(items[0].UserID, 'Deleted items from cart');
+            
+            res.status(200).json({ message: 'Items deleted successfully', totalDeleted });
+        })
+        .catch((err) => {
+            res.status(500).json({ error: err });
+        });
+});
+
+// Place an order
 router.post('/place-order', (req, res) => {
     const { UserID, TotalAmount, ShippingAddress, PaymentMethod, items } = req.body;
     
-    // Check if required fields are present
     if (!UserID || !TotalAmount || !ShippingAddress || !PaymentMethod || !items || items.length === 0) {
         return res.status(400).json({ message: 'Missing required fields or no items provided' });
     }
 
-    // Start the transaction
     db.beginTransaction((err) => {
         if (err) {
             console.error('Error starting transaction', err);
             return res.status(500).send('Server error');
         }
 
-        // Insert into orders table
         const orderQuery = 'INSERT INTO orders (UserID, OrderDate, TotalAmount, ShippingAddress, PaymentMethod) VALUES (?, NOW(), ?, ?, ?)';
         db.query(orderQuery, [UserID, TotalAmount, ShippingAddress, PaymentMethod], (err, result) => {
             if (err) {
@@ -210,9 +207,8 @@ router.post('/place-order', (req, res) => {
                 });
             }
 
-            const OrderID = result.insertId; // Get the inserted order's ID
+            const OrderID = result.insertId;
 
-            // Insert each item into order_details table
             const orderDetailsPromises = items.map((item) => {
                 return new Promise((resolve, reject) => {
                     const orderDetailQuery = 'INSERT INTO order_details (OrderID, FurnitureID, Quantity, Price) VALUES (?, ?, ?, ?)';
@@ -225,10 +221,8 @@ router.post('/place-order', (req, res) => {
                 });
             });
 
-            // Wait for all order details to be inserted
             Promise.all(orderDetailsPromises)
                 .then(() => {
-                    // Commit the transaction
                     db.commit((err) => {
                         if (err) {
                             return db.rollback(() => {
@@ -237,11 +231,13 @@ router.post('/place-order', (req, res) => {
                             });
                         }
 
+                        // Log user interaction
+                        logUserInteraction(UserID, 'Placed an order');
+
                         res.status(200).json({ message: 'Order placed successfully', OrderID });
                     });
                 })
                 .catch((err) => {
-                    // Rollback in case of any error
                     db.rollback(() => {
                         console.error('Error inserting order details', err);
                         res.status(500).send('Server error');
@@ -250,6 +246,5 @@ router.post('/place-order', (req, res) => {
         });
     });
 });
-
 
 module.exports = router;
