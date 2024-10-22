@@ -116,35 +116,39 @@ router.get('/user-all/:userId', (req, res) => {
     });
 });
 
-// Get furnitures by name
+// Get furnitures by name, including user data related to the furniture
 router.get('/like-items/:userId/:name', (req, res) => {
-    const userId = req.params.userId;
-    const name = req.params.name;
+    const { userId, name } = req.params;
 
     const query = `
-        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, fu.UserId, fu.Liked, fu.Purchased
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, 
+               u.UserID, u.UserName, u.Email
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
-        LEFT JOIN furniture_user fu ON f.FurnitureId = fu.FurnitureId AND fu.UserId = ?
+        INNER JOIN furniture_user fu ON f.FurnitureId = fu.FurnitureID
+        INNER JOIN users u ON fu.UserID = u.UserID
         WHERE f.Name LIKE ?
         GROUP BY f.FurnitureId
     `;
 
-    db.query(query, [userId, `%${name}%`], (err, results) => {
+    db.query(query, [`%${name}%`], (err, results) => {
         if (err) {
             console.error('Error fetching items by name:', err);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
         // Log user interaction (e.g., "Searched for furniture with name [Name]")
-        logUserInteraction(req.params.userId, `Searched for furniture with name ${name}`);
+        logUserInteraction(userId, `Searched for furniture with name ${name}`);
 
         const products = results.map(product => ({
             ...product,
             ImageURLs: product.imageURLs ? product.imageURLs.split(',') : [],
-            Liked: product.Liked,  // Add Liked field from furniture_user table
-            Purchased: product.Purchased  // Add Purchased field from furniture_user table
+            CreatedBy: {
+                UserID: product.UserID,
+                UserName: product.UserName,
+                Email: product.Email
+            }
         }));
 
         res.status(200).json(products);
