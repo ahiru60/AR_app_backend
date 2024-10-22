@@ -118,18 +118,20 @@ router.get('/user-all/:userId', (req, res) => {
 
 // Get furnitures by name
 router.get('/like-items/:userId/:name', (req, res) => {
+    const userId = req.params.userId;
     const name = req.params.name;
 
     const query = `
-        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL
+        SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, fu.UserId, fu.Liked, fu.Purchased
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
+        LEFT JOIN furniture_user fu ON f.FurnitureId = fu.FurnitureId AND fu.UserId = ?
         WHERE f.Name LIKE ?
         GROUP BY f.FurnitureId
     `;
 
-    db.query(query, [`%${name}%`], (err, results) => {
+    db.query(query, [userId, `%${name}%`], (err, results) => {
         if (err) {
             console.error('Error fetching items by name:', err);
             return res.status(500).json({ error: 'Internal server error' });
@@ -140,12 +142,15 @@ router.get('/like-items/:userId/:name', (req, res) => {
 
         const products = results.map(product => ({
             ...product,
-            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : []
+            ImageURLs: product.imageURLs ? product.imageURLs.split(',') : [],
+            Liked: product.Liked,  // Add Liked field from furniture_user table
+            Purchased: product.Purchased  // Add Purchased field from furniture_user table
         }));
 
         res.status(200).json(products);
     });
 });
+
 
 // Get furniture by ID
 router.get('/:id', (req, res) => {
