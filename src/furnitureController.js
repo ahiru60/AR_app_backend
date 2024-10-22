@@ -11,7 +11,20 @@ const logUserInteraction = (userId, actionDescription) => {
         }
     });
 };
+router.post('/log-view', (req, res) => {
+    const { UserID, FurnitureID } = req.body;
 
+    // Check if required fields are provided
+    if (!UserID || !FurnitureID) {
+        return res.status(400).json({ message: 'UserID and FurnitureID are required' });
+    }
+
+    // Log the product view in the user_logs table
+    logUserInteraction(UserID, `Viewed product with FurnitureID ${FurnitureID}`);
+
+    // Send a success response
+    res.status(200).json({ message: 'Product view logged successfully' });
+});
 // Get random products including the name of the user who created them
 router.get('/:userId', (req, res) => {
     const userId = req.params.userId; 
