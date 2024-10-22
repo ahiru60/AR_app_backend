@@ -122,7 +122,7 @@ router.get('/like-items/:userId/:name', (req, res) => {
 
     const query = `
         SELECT f.*, GROUP_CONCAT(fi.ImageURL) AS imageURLs, av.slug, av.ModelURL, av.texturesURL, 
-               u.UserID, u.UserName, u.Email
+               u.UserID, u.Name, u.Email
         FROM furniture f
         LEFT JOIN furnitureimages fi ON f.FurnitureId = fi.FurnitureId
         LEFT JOIN ar_visualization av ON f.FurnitureId = av.FurnitureID
