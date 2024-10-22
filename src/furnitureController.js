@@ -116,7 +116,7 @@ router.get('/user-all/:userId', (req, res) => {
     });
 });
 
-// Get furnitures by name, including user data related to the furniture
+// Get furnitures by name, including user data related to the furniture 
 router.get('/like-items/:userId/:name', (req, res) => {
     const { userId, name } = req.params;
 
