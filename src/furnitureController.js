@@ -15,7 +15,7 @@ router.post('/log-view', (req, res) => {
     const { UserID, Message } = req.body;
 
     // Check if required fields are provided
-    if (!UserID || !FurnitureID) {
+    if (!UserID || !Message) {
         return res.status(400).json({ message: 'UserID and Message are required' });
     }
 
@@ -25,6 +25,7 @@ router.post('/log-view', (req, res) => {
     // Send a success response
     res.status(200).json({ message: 'Product view logged successfully' });
 });
+
 // Get random products including the name of the user who created them
 router.get('/:userId', (req, res) => {
     const userId = req.params.userId; 
