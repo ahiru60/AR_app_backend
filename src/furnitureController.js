@@ -286,5 +286,29 @@ router.delete('/:id', (req, res) => {
     // Continue with delete logic...
     // ...
 });
+// Route to get ar_visualization record by FurnitureID
+router.get('/ar-visualization/:furnitureId', (req, res) => {
+    const furnitureId = req.params.furnitureId;
+
+    const query = `
+        SELECT *
+        FROM ar_visualization
+        WHERE FurnitureID = ?
+    `;
+
+    db.query(query, [furnitureId], (err, results) => {
+        if (err) {
+            console.error('Error fetching AR visualization record:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'AR visualization record not found' });
+        }
+
+        res.status(200).json(results[0]);
+    });
+});
+
 
 module.exports = router;
