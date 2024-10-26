@@ -268,11 +268,45 @@ router.put('/:id', (req, res) => {
     const furniture = req.body;
     const userId = req.body.userId; // Assuming the UserID is passed in the request body
 
+    /// Extract image URLs from the furniture object
+    const imageUrls = [
+        furniture.ImageUrl1,
+        furniture.ImageUrl2,
+        furniture.ImageUrl3
+    ].filter(url => url && url.trim() !== '');
+    // Remove image URLs from the furniture object
+    delete furniture.ImageUrl1;
+    delete furniture.ImageUrl2;
+    delete furniture.ImageUrl3;
+    db.query('UPDATE furniture SET ? WHERE FurnitureID = ?', [furniture, furnitureId], (err, results) => {
+        if (err) {
+            console.error('Error updating furniture:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        // Delete existing images for the furniture
+        db.query('DELETE FROM furnitureimages WHERE FurnitureId = ?', [furnitureId], (err, results) => {
+            if (err) {
+                console.error('Error deleting old images:', err);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            if (imageUrls.length > 0) {
+                const imageRecords = imageUrls.map(url => [furnitureId, url]);
+                const sql = 'INSERT INTO furnitureimages (FurnitureId, ImageURL) VALUES ?';
+                db.query(sql, [imageRecords], (err2, results2) => {
+                    if (err2) {
+                        console.error('Error inserting new images:', err2);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
     // Log detailed user interaction (e.g., "Updated furniture [FurnitureName]")
-   // logUserInteraction(userId, `Updated furniture ${furniture.Name}`);
+    //logUserInteraction(userId, `Updated furniture ${furniture.Name}`);
 
-    // Continue with update logic...
-    // ...
+                    res.json({ message: 'Furniture and images updated successfully' });
+                });
+            } else {
+                res.json({ message: 'Furniture updated successfully (no images provided)' });
+            }
+        });
+    });
 });
 
 // Delete furniture
@@ -280,11 +314,24 @@ router.delete('/:id', (req, res) => {
     const furnitureId = req.params.id;
     const userId = req.query.userId; // Assuming the UserID is passed in the query
 
+    // Delete images associated with the furniture
+    db.query('DELETE FROM furnitureimages WHERE FurnitureId = ?', [furnitureId], (err, results) => {
+        if (err) {
+            console.error('Error deleting images:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        // Delete the furniture
+        db.query('DELETE FROM furniture WHERE FurnitureID = ?', [furnitureId], (err, results) => {
+            if (err) {
+                console.error('Error deleting furniture:', err);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
     // Log detailed user interaction (e.g., "Deleted furniture [FurnitureID]")
-    logUserInteraction(userId, `Deleted furniture with ID ${furnitureId}`);
+   // logUserInteraction(userId, `Deleted furniture with ID ${furnitureId}`);
 
-    // Continue with delete logic...
-    // ...
+            res.json({ message: 'Furniture deleted successfully' });
+        });
+    });
 });
 // Route to get ar_visualization record by FurnitureID
 router.get('/ar-visualization/:furnitureId', (req, res) => {
