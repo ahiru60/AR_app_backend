@@ -27,7 +27,7 @@ function handleDisconnect() {
     connection.on('error', err => {
         if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR') {
             console.error('Database connection lost. Reconnecting...');
-            handleDisconnect(); // Reconnect if the connection was lost
+            handleDisconnect(); // Reconnect if the connection was lost.
         } else {
             console.error('Database error:', err);
             throw err; // For other errors, throw the error to be handled by higher layers
