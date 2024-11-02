@@ -357,5 +357,54 @@ router.get('/ar-visualization/:furnitureId', (req, res) => {
     });
 });
 
+// Route to get values of revenue, user views, and purchase counts
+router.get('/analytics/summary', (req, res) => {
+    const revenueQuery = `
+        SELECT SUM(od.Quantity * p.Price) AS TotalRevenue
+        FROM order_details od
+        JOIN furniture p ON od.FurnitureID = p.FurnitureID
+    `;
+    
+    const viewsQuery = `
+        SELECT COUNT(*) AS TotalViews
+        FROM user_logs
+        WHERE ActionDescription LIKE 'Viewed product:%'
+    `;
+    
+    const purchasesQuery = `
+        SELECT COUNT(DISTINCT OrderID) AS TotalPurchases
+        FROM orders
+    `;
+
+    // Execute the queries in parallel
+    db.query(revenueQuery, (err1, revenueResult) => {
+        if (err1) {
+            console.error('Error fetching revenue:', err1);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        db.query(viewsQuery, (err2, viewsResult) => {
+            if (err2) {
+                console.error('Error fetching user views:', err2);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+
+            db.query(purchasesQuery, (err3, purchasesResult) => {
+                if (err3) {
+                    console.error('Error fetching purchases count:', err3);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+
+                res.json({
+                    revenue: revenueResult[0].TotalRevenue || 0,
+                    views: viewsResult[0].TotalViews || 0,
+                    purchases: purchasesResult[0].TotalPurchases || 0
+                });
+            });
+        });
+    });
+});
+
+
 
 module.exports = router;
