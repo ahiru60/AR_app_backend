@@ -374,7 +374,7 @@ router.get('/analytics/summary/:userId', (req, res) => {
         JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
         WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
     `;
-    id = ":"+sellerId;
+    id = ": "+sellerId;
     const viewsQuery = `
         SELECT COUNT(*) AS TotalViews
         FROM user_logs
