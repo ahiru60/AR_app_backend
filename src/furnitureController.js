@@ -357,39 +357,50 @@ router.get('/ar-visualization/:furnitureId', (req, res) => {
     });
 });
 
-// Route to get values of revenue, user views, and purchase counts
+// Route to get values of revenue, user views, and purchase counts for a specific user
 router.get('/analytics/summary', (req, res) => {
+    const userId = req.query.userId; // Assuming userId is passed in the query string
+
+    // Check if userId is provided
+    if (!userId) {
+        return res.status(400).json({ error: 'User ID is required' });
+    }
+
     const revenueQuery = `
         SELECT SUM(od.Quantity * p.Price) AS TotalRevenue
         FROM order_details od
         JOIN furniture p ON od.FurnitureID = p.FurnitureID
+        JOIN orders o ON od.OrderID = o.OrderID
+        WHERE o.UserID = ?  -- Filter by userId
     `;
     
     const viewsQuery = `
         SELECT COUNT(*) AS TotalViews
         FROM user_logs
         WHERE ActionDescription LIKE 'Viewed product:%'
+        AND UserID = ?  -- Filter by userId
     `;
     
     const purchasesQuery = `
         SELECT COUNT(DISTINCT OrderID) AS TotalPurchases
         FROM orders
+        WHERE UserID = ?  -- Filter by userId
     `;
 
     // Execute the queries in parallel
-    db.query(revenueQuery, (err1, revenueResult) => {
+    db.query(revenueQuery, [userId], (err1, revenueResult) => {
         if (err1) {
             console.error('Error fetching revenue:', err1);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        db.query(viewsQuery, (err2, viewsResult) => {
+        db.query(viewsQuery, [userId], (err2, viewsResult) => {
             if (err2) {
                 console.error('Error fetching user views:', err2);
                 return res.status(500).json({ error: 'Internal server error' });
             }
 
-            db.query(purchasesQuery, (err3, purchasesResult) => {
+            db.query(purchasesQuery, [userId], (err3, purchasesResult) => {
                 if (err3) {
                     console.error('Error fetching purchases count:', err3);
                     return res.status(500).json({ error: 'Internal server error' });
@@ -404,6 +415,7 @@ router.get('/analytics/summary', (req, res) => {
         });
     });
 });
+
 
 
 
