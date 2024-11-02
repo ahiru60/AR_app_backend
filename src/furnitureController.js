@@ -359,7 +359,7 @@ router.get('/ar-visualization/:furnitureId', (req, res) => {
 
 // Route to get values of revenue, user views, and purchase counts for a specific user
 router.get('/analytics/summary', (req, res) => {
-    const userId = req.query.userId; // Assuming userId is passed in the query string
+    const userId = req.params.userId; // Assuming userId is passed in the query string
 
     // Check if userId is provided
     if (!userId) {
