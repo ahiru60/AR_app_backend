@@ -374,14 +374,12 @@ router.get('/analytics/summary/:userId', (req, res) => {
         JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
         WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
     `;
-    
+    id = ":"+sellerId;
     const viewsQuery = `
         SELECT COUNT(*) AS TotalViews
-        FROM user_logs ul
-        JOIN furniture f ON ul.FurnitureID = f.FurnitureID
-        JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-        WHERE ul.ActionDescription LIKE 'Viewed product:%'
-        AND fu.UserID = ?  -- Filter by sellerId
+        FROM user_logs
+        WHERE ActionDescription LIKE 'Viewed product%'
+        AND ActionDescription LIKE ?  -- Assuming UserID exists in user_logs
     `;
     
     const purchasesQuery = `
@@ -400,7 +398,7 @@ router.get('/analytics/summary/:userId', (req, res) => {
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        db.query(viewsQuery, [sellerId], (err2, viewsResult) => {
+        db.query(viewsQuery, [id], (err2, viewsResult) => {
             if (err2) {
                 console.error('Error fetching user views:', err2);
                 return res.status(500).json({ error: 'Internal server error' });
