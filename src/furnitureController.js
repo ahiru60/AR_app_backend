@@ -357,50 +357,56 @@ router.get('/ar-visualization/:furnitureId', (req, res) => {
     });
 });
 
-// Route to get values of revenue, user views, and purchase counts for a specific user
+// Route to get values of revenue, user views, and purchase counts for a specific seller (creator)
 router.get('/analytics/summary/:userId', (req, res) => {
-    const userId = req.params.userId; // Assuming userId is passed in the query string
+    const sellerId = req.params.userId; // Extract sellerId from route parameters
 
-    // Check if userId is provided
-    if (!userId) {
-        return res.status(400).json({ error: 'User ID is required' });
+    // Check if sellerId is provided
+    if (!sellerId) {
+        return res.status(400).json({ error: 'Seller ID is required' });
     }
 
     const revenueQuery = `
-        SELECT SUM(od.Quantity * p.Price) AS TotalRevenue
+        SELECT SUM(od.Quantity * od.Price) AS TotalRevenue
         FROM order_details od
-        JOIN furniture p ON od.FurnitureID = p.FurnitureID
         JOIN orders o ON od.OrderID = o.OrderID
-        WHERE o.UserID = ?  -- Filter by userId
+        JOIN furniture f ON od.FurnitureID = f.FurnitureID
+        JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+        WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
     `;
     
     const viewsQuery = `
         SELECT COUNT(*) AS TotalViews
-        FROM user_logs
-        WHERE ActionDescription LIKE 'Viewed product:%'
-        AND UserID = ?  -- Filter by userId
+        FROM user_logs ul
+        JOIN furniture f ON ul.FurnitureID = f.FurnitureID
+        JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+        WHERE ul.ActionDescription LIKE 'Viewed product:%'
+        AND fu.UserID = ?  -- Filter by sellerId
     `;
     
     const purchasesQuery = `
-        SELECT COUNT(DISTINCT OrderID) AS TotalPurchases
-        FROM orders
-        WHERE UserID = ?  -- Filter by userId
+        SELECT COUNT(DISTINCT o.OrderID) AS TotalPurchases
+        FROM orders o
+        JOIN order_details od ON o.OrderID = od.OrderID
+        JOIN furniture f ON od.FurnitureID = f.FurnitureID
+        JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+        WHERE fu.UserID = ?  -- Filter by sellerId
     `;
 
     // Execute the queries in parallel
-    db.query(revenueQuery, [userId], (err1, revenueResult) => {
+    db.query(revenueQuery, [sellerId], (err1, revenueResult) => {
         if (err1) {
             console.error('Error fetching revenue:', err1);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        db.query(viewsQuery, [userId], (err2, viewsResult) => {
+        db.query(viewsQuery, [sellerId], (err2, viewsResult) => {
             if (err2) {
                 console.error('Error fetching user views:', err2);
                 return res.status(500).json({ error: 'Internal server error' });
             }
 
-            db.query(purchasesQuery, [userId], (err3, purchasesResult) => {
+            db.query(purchasesQuery, [sellerId], (err3, purchasesResult) => {
                 if (err3) {
                     console.error('Error fetching purchases count:', err3);
                     return res.status(500).json({ error: 'Internal server error' });
@@ -415,6 +421,7 @@ router.get('/analytics/summary/:userId', (req, res) => {
         });
     });
 });
+
 
 
 
