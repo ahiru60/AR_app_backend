@@ -427,6 +427,141 @@ router.get('/analytics/summary/:userId', (req, res) => {
     });
 });
 
+// Route to get values of revenue, user views, and purchase counts for a specific seller (creator)
+router.get('/analytics/summary/:userId/:startDate/:endDate', (req, res) => {
+    const { sellerId,startDate, endDate } = req.params; // Extract date range from query parameters
+
+    // Check if sellerId is provided
+    if (!sellerId) {
+        return res.status(400).json({ error: 'Seller ID is required' });
+    }
+
+    // Validate that both startDate and endDate are provided for date range filtering
+    if (startDate && endDate) {
+        // SQL date filtering uses BETWEEN for an inclusive range
+        const revenueQuery = `
+            SELECT SUM(od.Quantity * od.Price) AS TotalRevenue
+            FROM order_details od
+            JOIN orders o ON od.OrderID = o.OrderID
+            JOIN furniture f ON od.FurnitureID = f.FurnitureID
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
+            AND o.OrderDate BETWEEN ? AND ?  -- Filter by date range
+        `;
+
+        const viewsQuery = `
+            SELECT COUNT(*) AS TotalViews
+            FROM user_logs ul
+            WHERE ul.ActionDescription LIKE 'Viewed product:%'
+            AND EXISTS (
+                SELECT 1
+                FROM furniture f
+                JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+                WHERE fu.UserID = ?  -- Filter by sellerId
+                AND f.FurnitureID = SUBSTRING_INDEX(ul.ActionDescription, ': ', -1)  -- Extracting FurnitureID from ActionDescription
+            )
+            AND ul.LogDate BETWEEN ? AND ?  -- Filter by date range
+        `;
+
+        const purchasesQuery = `
+            SELECT COUNT(DISTINCT o.OrderID) AS TotalPurchases
+            FROM orders o
+            JOIN order_details od ON o.OrderID = od.OrderID
+            JOIN furniture f ON od.FurnitureID = f.FurnitureID
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId
+            AND o.OrderDate BETWEEN ? AND ?  -- Filter by date range
+        `;
+
+        // Execute the queries in parallel, passing the date range parameters
+        db.query(revenueQuery, [sellerId, startDate, endDate], (err1, revenueResult) => {
+            if (err1) {
+                console.error('Error fetching revenue:', err1);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+
+            db.query(viewsQuery, [sellerId, startDate, endDate], (err2, viewsResult) => {
+                if (err2) {
+                    console.error('Error fetching user views:', err2);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+
+                db.query(purchasesQuery, [sellerId, startDate, endDate], (err3, purchasesResult) => {
+                    if (err3) {
+                        console.error('Error fetching purchases count:', err3);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+
+                    res.json({
+                        revenue: revenueResult[0].TotalRevenue || 0,
+                        views: viewsResult[0].TotalViews || 0,
+                        purchases: purchasesResult[0].TotalPurchases || 0
+                    });
+                });
+            });
+        });
+    } else {
+        // If no date range is specified, run the original queries without date filtering
+        const revenueQuery = `
+            SELECT SUM(od.Quantity * od.Price) AS TotalRevenue
+            FROM order_details od
+            JOIN orders o ON od.OrderID = o.OrderID
+            JOIN furniture f ON od.FurnitureID = f.FurnitureID
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
+        `;
+
+        const viewsQuery = `
+            SELECT COUNT(*) AS TotalViews
+            FROM user_logs ul
+            WHERE ul.ActionDescription LIKE 'Viewed product:%'
+            AND EXISTS (
+                SELECT 1
+                FROM furniture f
+                JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+                WHERE fu.UserID = ?  -- Filter by sellerId
+                AND f.FurnitureID = SUBSTRING_INDEX(ul.ActionDescription, ': ', -1)  -- Extracting FurnitureID from ActionDescription
+            )
+        `;
+
+        const purchasesQuery = `
+            SELECT COUNT(DISTINCT o.OrderID) AS TotalPurchases
+            FROM orders o
+            JOIN order_details od ON o.OrderID = od.OrderID
+            JOIN furniture f ON od.FurnitureID = f.FurnitureID
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId
+        `;
+
+        // Execute the queries in parallel
+        db.query(revenueQuery, [sellerId], (err1, revenueResult) => {
+            if (err1) {
+                console.error('Error fetching revenue:', err1);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+
+            db.query(viewsQuery, [sellerId], (err2, viewsResult) => {
+                if (err2) {
+                    console.error('Error fetching user views:', err2);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+
+                db.query(purchasesQuery, [sellerId], (err3, purchasesResult) => {
+                    if (err3) {
+                        console.error('Error fetching purchases count:', err3);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+
+                    res.json({
+                        revenue: revenueResult[0].TotalRevenue || 0,
+                        views: viewsResult[0].TotalViews || 0,
+                        purchases: purchasesResult[0].TotalPurchases || 0
+                    });
+                });
+            });
+        });
+    }
+});
 
 
 
