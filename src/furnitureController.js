@@ -448,7 +448,7 @@ router.get('/analytics/summary/:userId', (req, res) => {
     if (filter === "Revenue") {
         // Query to get the total revenue per product
         query = `
-            SELECT f.ProductName, SUM(od.Quantity * od.Price) AS TotalRevenue
+            SELECT f.Name, SUM(od.Quantity * od.Price) AS TotalRevenue
             FROM order_details od
             JOIN orders o ON od.OrderID = o.OrderID
             JOIN furniture f ON od.FurnitureID = f.FurnitureID
@@ -465,7 +465,7 @@ router.get('/analytics/summary/:userId', (req, res) => {
     } else if (filter === "Orders") {
         // Query to get detailed items in each order
         query = `
-            SELECT o.OrderID, f.ProductName, od.Quantity, od.Price, (od.Quantity * od.Price) AS TotalPrice
+            SELECT o.OrderID, f.Name, od.Quantity, od.Price, (od.Quantity * od.Price) AS TotalPrice
             FROM orders o
             JOIN order_details od ON o.OrderID = od.OrderID
             JOIN furniture f ON od.FurnitureID = f.FurnitureID
