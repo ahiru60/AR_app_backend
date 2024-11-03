@@ -436,131 +436,79 @@ router.get('/analytics/summary/:userId/:startDate/:endDate', (req, res) => {
         return res.status(400).json({ error: 'Seller ID is required' });
     }
 
-    // Validate that both startDate and endDate are provided for date range filtering
-    if (startDate && endDate) {
-        // SQL date filtering uses BETWEEN for an inclusive range
-        const revenueQuery = `
-            SELECT SUM(od.Quantity * od.Price) AS TotalRevenue
-            FROM order_details od
-            JOIN orders o ON od.OrderID = o.OrderID
-            JOIN furniture f ON od.FurnitureID = f.FurnitureID
-            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-            WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
-            AND o.OrderDate BETWEEN ? AND ?  -- Filter by date range
-        `;
-
-        const viewsQuery = `
-            SELECT COUNT(*) AS TotalViews
-            FROM user_logs ul
-            WHERE ul.ActionDescription LIKE 'Viewed product:%'
-            AND EXISTS (
-                SELECT 1
-                FROM furniture f
-                JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-                WHERE fu.UserID = ?  -- Filter by sellerId
-                AND f.FurnitureID = SUBSTRING_INDEX(ul.ActionDescription, ': ', -1)  -- Extracting FurnitureID from ActionDescription
-            )
-            AND ul.LogDate BETWEEN ? AND ?  -- Filter by date range
-        `;
-
-        const purchasesQuery = `
-            SELECT COUNT(DISTINCT o.OrderID) AS TotalPurchases
-            FROM orders o
-            JOIN order_details od ON o.OrderID = od.OrderID
-            JOIN furniture f ON od.FurnitureID = f.FurnitureID
-            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-            WHERE fu.UserID = ?  -- Filter by sellerId
-            AND o.OrderDate BETWEEN ? AND ?  -- Filter by date range
-        `;
-
-        // Execute the queries in parallel, passing the date range parameters
-        db.query(revenueQuery, [sellerId, startDate, endDate], (err1, revenueResult) => {
-            if (err1) {
-                console.error('Error fetching revenue:', err1);
-                return res.status(500).json({ error: 'Internal server error' });
-            }
-
-            db.query(viewsQuery, [sellerId, startDate, endDate], (err2, viewsResult) => {
-                if (err2) {
-                    console.error('Error fetching user views:', err2);
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
-
-                db.query(purchasesQuery, [sellerId, startDate, endDate], (err3, purchasesResult) => {
-                    if (err3) {
-                        console.error('Error fetching purchases count:', err3);
-                        return res.status(500).json({ error: 'Internal server error' });
-                    }
-
-                    res.json({
-                        revenue: revenueResult[0].TotalRevenue || 0,
-                        views: viewsResult[0].TotalViews || 0,
-                        purchases: purchasesResult[0].TotalPurchases || 0
-                    });
-                });
-            });
-        });
-    } else {
-        // If no date range is specified, run the original queries without date filtering
-        const revenueQuery = `
-            SELECT SUM(od.Quantity * od.Price) AS TotalRevenue
-            FROM order_details od
-            JOIN orders o ON od.OrderID = o.OrderID
-            JOIN furniture f ON od.FurnitureID = f.FurnitureID
-            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-            WHERE fu.UserID = ?  -- Filter by sellerId (creator's UserID)
-        `;
-
-        const viewsQuery = `
-            SELECT COUNT(*) AS TotalViews
-            FROM user_logs ul
-            WHERE ul.ActionDescription LIKE 'Viewed product:%'
-            AND EXISTS (
-                SELECT 1
-                FROM furniture f
-                JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-                WHERE fu.UserID = ?  -- Filter by sellerId
-                AND f.FurnitureID = SUBSTRING_INDEX(ul.ActionDescription, ': ', -1)  -- Extracting FurnitureID from ActionDescription
-            )
-        `;
-
-        const purchasesQuery = `
-            SELECT COUNT(DISTINCT o.OrderID) AS TotalPurchases
-            FROM orders o
-            JOIN order_details od ON o.OrderID = od.OrderID
-            JOIN furniture f ON od.FurnitureID = f.FurnitureID
-            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
-            WHERE fu.UserID = ?  -- Filter by sellerId
-        `;
-
-        // Execute the queries in parallel
-        db.query(revenueQuery, [sellerId], (err1, revenueResult) => {
-            if (err1) {
-                console.error('Error fetching revenue:', err1);
-                return res.status(500).json({ error: 'Internal server error' });
-            }
-
-            db.query(viewsQuery, [sellerId], (err2, viewsResult) => {
-                if (err2) {
-                    console.error('Error fetching user views:', err2);
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
-
-                db.query(purchasesQuery, [sellerId], (err3, purchasesResult) => {
-                    if (err3) {
-                        console.error('Error fetching purchases count:', err3);
-                        return res.status(500).json({ error: 'Internal server error' });
-                    }
-
-                    res.json({
-                        revenue: revenueResult[0].TotalRevenue || 0,
-                        views: viewsResult[0].TotalViews || 0,
-                        purchases: purchasesResult[0].TotalPurchases || 0
-                    });
-                });
-            });
-        });
+    // Validate that a filter is provided
+    if (!filter || (filter !== "Orders" && filter !== "Revenue")) {
+        return res.status(400).json({ error: 'Filter must be either "Orders" or "Revenue"' });
     }
+
+    let query;
+    let queryParams = [sellerId];
+
+    if (filter === "Revenue") {
+        // Query to get the total revenue per product
+        query = `
+            SELECT f.ProductName, SUM(od.Quantity * od.Price) AS TotalRevenue
+            FROM order_details od
+            JOIN orders o ON od.OrderID = o.OrderID
+            JOIN furniture f ON od.FurnitureID = f.FurnitureID
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId
+        `;
+
+        if (startDate && endDate) {
+            query += " AND o.OrderDate BETWEEN ? AND ?";
+            queryParams.push(startDate, endDate);
+        }
+
+        query += " GROUP BY f.ProductName"; // Group by product name to get revenue per product
+    } else if (filter === "Orders") {
+        // Query to get detailed items in each order
+        query = `
+            SELECT o.OrderID, f.ProductName, od.Quantity, od.Price, (od.Quantity * od.Price) AS TotalPrice
+            FROM orders o
+            JOIN order_details od ON o.OrderID = od.OrderID
+            JOIN furniture f ON od.FurnitureID = f.FurnitureID
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId
+        `;
+
+        if (startDate && endDate) {
+            query += " AND o.OrderDate BETWEEN ? AND ?";
+            queryParams.push(startDate, endDate);
+        }
+
+        query += " ORDER BY o.OrderID"; // Order by OrderID for clarity
+    }
+
+    // Execute the query based on the filter
+    db.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.error(`Error fetching ${filter.toLowerCase()} data:`, err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // Send response based on the filter
+        if (filter === "Revenue") {
+            // Respond with list of products and their revenue
+            res.json({
+                products: results.map(row => ({
+                    productName: row.ProductName,
+                    totalRevenue: row.TotalRevenue || 0
+                }))
+            });
+        } else if (filter === "Orders") {
+            // Respond with list of items in each order
+            res.json({
+                orders: results.map(row => ({
+                    orderId: row.OrderID,
+                    productName: row.ProductName,
+                    quantity: row.Quantity,
+                    price: row.Price,
+                    totalPrice: row.TotalPrice
+                }))
+            });
+        }
+    });
 });
 
 
