@@ -427,9 +427,10 @@ router.get('/analytics/summary/:userId', (req, res) => {
     });
 });
 
-// Route to get values of revenue, user views, and purchase counts for a specific seller (creator)
-router.get('/analytics/summary/:userId/:startDate/:endDate', (req, res) => {
-    const { sellerId,startDate, endDate } = req.params; // Extract date range from query parameters
+// Route to get detailed analytics data for orders or revenue for a specific seller (creator)
+router.get('/analytics/summary/:userId', (req, res) => {
+    const sellerId = req.params.userId; // Extract sellerId from route parameters
+    const { startDate, endDate, filter } = req.query; // Extract date range and filter from query parameters
 
     // Check if sellerId is provided
     if (!sellerId) {
