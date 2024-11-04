@@ -357,6 +357,32 @@ router.get('/ar-visualization/:furnitureId', (req, res) => {
     });
 });
 
+// Route to get ar_visualization record by FurnitureID
+router.get('/clicks/:furnitureId', (req, res) => {
+    const furnitureId = req.params.furnitureId;
+
+    const query = `
+        SELECT COUNT(*) AS TotalClicks
+        FROM user_logs ul
+        WHERE ul.ActionDescription LIKE 'Placed an order%'
+        AND SUBSTRING_INDEX(ul.ActionDescription, ': ', -1) = ?
+    `;
+
+    db.query(query, [furnitureId], (err, results) => {
+        if (err) {
+            console.error('Error fetching click count:', err);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        // If results length is 0, it means no clicks were found for that furnitureId
+        if (results.length === 0 || results[0].TotalClicks === 0) {
+            return res.status(404).json({ error: 'No clicks found for this furniture item' });
+        }
+
+        res.status(200).json({ TotalClicks: results[0].TotalClicks });
+    });
+});
+
 // Route to get values of revenue, user views, and purchase counts for a specific seller (creator)
 router.get('/analytics/summary/:userId', (req, res) => {
     const sellerId = req.params.userId; // Extract sellerId from route parameters
