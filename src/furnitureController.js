@@ -357,31 +357,38 @@ router.get('/ar-visualization/:furnitureId', (req, res) => {
     });
 });
 
-// Route to get ar_visualization record by FurnitureID
-router.get('/clicks/:furnitureId', (req, res) => {
+router.get('/views/:furnitureId', (req, res) => {
     const furnitureId = req.params.furnitureId;
+    const sellerId = req.query.sellerId; // Assuming you pass sellerId as a query parameter
 
-    const query = `
-        SELECT COUNT(*) AS TotalClicks
+    const viewsQuery = `
+        SELECT COUNT(*) AS TotalViews
         FROM user_logs ul
-        WHERE ul.ActionDescription LIKE 'Placed an order%'
-        AND SUBSTRING_INDEX(ul.ActionDescription, ': ', -1) = ?
+        WHERE ul.ActionDescription LIKE 'Viewed product:%'
+        AND EXISTS (
+            SELECT 1
+            FROM furniture f
+            JOIN furniture_user fu ON f.FurnitureID = fu.FurnitureID
+            WHERE fu.UserID = ?  -- Filter by sellerId
+            AND f.FurnitureID = SUBSTRING_INDEX(ul.ActionDescription, ': ', -1)  -- Extracting FurnitureID from ActionDescription
+        )
+        AND SUBSTRING_INDEX(ul.ActionDescription, ': ', -1) = ?  -- Filter by specific FurnitureID
     `;
 
-    db.query(query, [furnitureId], (err, results) => {
+    db.query(viewsQuery, [sellerId, furnitureId], (err, results) => {
         if (err) {
-            console.error('Error fetching click count:', err);
+            console.error('Error fetching total views:', err);
             return res.status(500).json({ error: 'Internal server error' });
         }
 
-        // If results length is 0, it means no clicks were found for that furnitureId
-        if (results.length === 0 || results[0].TotalClicks === 0) {
-            return res.status(404).json({ error: 'No clicks found for this furniture item' });
+        if (results.length === 0 || results[0].TotalViews === 0) {
+            return res.status(404).json({ error: 'No views found for this furniture item' });
         }
 
-        res.status(200).json({ TotalClicks: results[0].TotalClicks });
+        res.status(200).json({ TotalViews: results[0].TotalViews });
     });
 });
+
 
 // Route to get values of revenue, user views, and purchase counts for a specific seller (creator)
 router.get('/analytics/summary/:userId', (req, res) => {
